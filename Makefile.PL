@@ -5,7 +5,7 @@
 # as Perl itself.
 
 BEGIN {
-    require 5.004;
+    require 5.005;
     eval { require File::Spec };
     $@  and  die "You need to install the File::Spec module first!\n";
 }

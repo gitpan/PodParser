@@ -11,8 +11,8 @@
 package Pod::InputObjects;
 
 use vars qw($VERSION);
-$VERSION = 1.11;  ## Current version of this package
-require  5.004;    ## requires this Perl version or later
+$VERSION = 1.12;  ## Current version of this package
+require  5.005;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -522,8 +522,10 @@ sub _set_child2parent_links {
    my ($self, @children) = @_;
    ## Make sure any sequences know who their parent is
    for (@children) {
-      next unless (ref || ref eq 'SCALAR');
-      if ($_->isa('Pod::InteriorSequence') or $_->can('nested')) {
+      next  unless (length  and  ref  and  ref ne 'SCALAR');
+      if (UNIVERSAL::isa($_, 'Pod::InteriorSequence') or
+          UNIVERSAL::can($_, 'nested'))
+      {
           $_->nested($self);
       }
    }
@@ -537,7 +539,8 @@ sub _unset_child2parent_links {
    my $ptree = $self->{'-ptree'};
    for (@$ptree) {
       next  unless (length  and  ref  and  ref ne 'SCALAR');
-      $_->_unset_child2parent_links()  if $_->isa('Pod::InteriorSequence');
+      $_->_unset_child2parent_links()
+          if UNIVERSAL::isa($_, 'Pod::InteriorSequence');
    }
 }
 
@@ -890,7 +893,8 @@ sub _unset_child2parent_links {
    local *ptree = $self;
    for (@ptree) {
        next  unless (length  and  ref  and  ref ne 'SCALAR');
-       $_->_unset_child2parent_links()  if $_->isa('Pod::InteriorSequence');
+       $_->_unset_child2parent_links()
+           if UNIVERSAL::isa($_, 'Pod::InteriorSequence');
    }
 }
 
@@ -918,7 +922,7 @@ sub DESTROY {
 
 =head1 SEE ALSO
 
-See L<Pod::Parser>, L<Pod::Select>, and L<Pod::Callbacks>.
+See L<Pod::Parser>, L<Pod::Select>
 
 =head1 AUTHOR
 

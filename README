@@ -150,11 +150,9 @@
 
  REQUIREMENTS
  ============
- * Perl version 5.004 or later (5.005 or later is preferred, but 5.004
-   should work as long as you download File::Spec from CPAN)
+ * Perl version 5.005 or later
 
- * Any version of the File::Spec module from CPAN (note that File::Spec
-   is bundled with perl version 5.005 and later)
+ * File::Spec from CPAN (already bundled in Perl 5.005)
 
 
  BUILDING & INSTALLING

@@ -32,6 +32,7 @@ BEGIN {
        require Pod::PlainText;
        @ISA = qw( Pod::PlainText );
     }
+    require VMS::Filespec if $^O eq 'VMS';
 }
 
 ## Hardcode settings for TERMCAP and COLUMNS so we can try to get
@@ -41,13 +42,14 @@ BEGIN {
 sub catfile(@) { File::Spec->catfile(@_); }
 
 my $INSTDIR = abs_path(dirname $0);
-$INSTDIR = (dirname $INSTDIR) if (basename($INSTDIR) eq 'xtra');
+$INSTDIR = VMS::Filespec::unixpath($INSTDIR) if $^O eq 'VMS';
+$INSTDIR =~ s#/$## if $^O eq 'VMS';
 $INSTDIR = (dirname $INSTDIR) if (basename($INSTDIR) eq 'pod');
 $INSTDIR = (dirname $INSTDIR) if (basename($INSTDIR) eq 't');
 my @PODINCDIRS = ( catfile($INSTDIR, 'lib', 'Pod'),
                    catfile($INSTDIR, 'scripts'),
-                   catfile($INSTDIR, 't', 'pod'),
-                   catfile($INSTDIR, 't', 'pod', 'xtra')
+                   catfile($INSTDIR, 'pod'),
+                   catfile($INSTDIR, 't', 'pod')
                  );
 
 ## Find the path to the file to =include
@@ -97,6 +99,10 @@ sub command {
     print $out_fh "###### end =include $incbase #####\n"    if ($incdebug);
 }
 
+sub begin_input {
+   $_[0]->{_INFILE} = VMS::Filespec::unixify($_[0]->{_INFILE}) if $^O eq 'VMS';
+}
+
 sub podinc2plaintext( $ $ ) {
     my ($infile, $outfile) = @_;
     local $_;
@@ -119,7 +125,7 @@ sub testpodinc2plaintext( @ ) {
       return  $msg;
    }
 
-   print "+ Running testpodinc2plaintext for '$testname'...\n";
+   print "# Running testpodinc2plaintext for '$testname'...\n";
    ## Compare the output against the expected result
    podinc2plaintext($infile, $outfile);
    if ( testcmp($outfile, $cmpfile) ) {
@@ -153,12 +159,12 @@ sub testpodplaintext( @ ) {
       if ($opts{'-xrgen'}) {
           if ($opts{'-force'} or ! -e $cmpfile) {
              ## Create the comparison file
-             print "+ Creating expected result for \"$testname\"" .
+             print "# Creating expected result for \"$testname\"" .
                    " pod2plaintext test ...\n";
              podinc2plaintext($podfile, $cmpfile);
           }
           else {
-             print "+ File $cmpfile already exists" .
+             print "# File $cmpfile already exists" .
                    " (use '-force' to regenerate it).\n";
           }
           next;
@@ -170,13 +176,13 @@ sub testpodplaintext( @ ) {
                         -Cmp => $cmpfile;
       if ($failmsg) {
           ++$failed;
-          print "+\tFAILED. ($failmsg)\n";
+          print "#\tFAILED. ($failmsg)\n";
 	  print "not ok ", $failed+$passes, "\n";
       }
       else {
           ++$passes;
           unlink($outfile);
-          print "+\tPASSED.\n";
+          print "#\tPASSED.\n";
 	  print "ok ", $failed+$passes, "\n";
       }
    }

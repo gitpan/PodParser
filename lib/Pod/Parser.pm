@@ -10,8 +10,8 @@
 package Pod::Parser;
 
 use vars qw($VERSION);
-$VERSION = 1.11;  ## Current version of this package
-require  5.004;    ## requires this Perl version or later
+$VERSION = 1.12;  ## Current version of this package
+require  5.005;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -71,7 +71,7 @@ Pod::Parser - base class for creating POD filters and translators
 
 =head1 REQUIRES
 
-perl5.004, Pod::InputObjects, FileHandle, Exporter, Carp
+perl5.005, Pod::InputObjects, Exporter, Symbol, Carp
 
 =head1 EXPORTS
 
@@ -172,7 +172,7 @@ paragraph, or some other input paragraph.
 
 Normally (by default) B<Pod::Parser> handles the C<=cut> POD directive
 by itself and does not pass it on to the caller for processing. Setting
-this option to non-empty, non-zero value will cause B<Pod::Parser> to
+this option to a non-empty, non-zero value will cause B<Pod::Parser> to
 pass the C<=cut> directive to the caller just like any other POD command
 (and hence it may be processed by the B<command()> method).
 
@@ -180,6 +180,15 @@ B<Pod::Parser> will still interpret the C<=cut> directive to mean that
 "cutting mode" has been (re)entered, but the caller will get a chance
 to capture the actual C<=cut> paragraph itself for whatever purpose
 it desires.
+
+=item B<-warnings> (default: unset)
+
+Normally (by default) B<Pod::Parser> recognizes a bare minimum of
+pod syntax errors and warnings and issues diagnostic messages
+for errors, but not for warnings. (Use B<Pod::Checker> to do more
+thorough checking of POD syntax.) Setting this option to a non-empty,
+non-zero value will cause B<Pod::Parser> to issue diagnostics for
+the few warnings it recognizes as well as the errors.
 
 =back
 
@@ -195,8 +204,13 @@ use strict;
 #use diagnostics;
 use Pod::InputObjects;
 use Carp;
-use FileHandle;
 use Exporter;
+BEGIN {
+   if ($] < 5.6) {
+      require Symbol;
+      import Symbol;
+   }
+}
 @ISA = qw(Exporter);
 
 ## These "variables" are used as local "glob aliases" for performance
@@ -837,7 +851,7 @@ sub parse_text {
        ($rdelim = $ldelim) =~ tr/</>/;
        $rdelim  =~ s/^(\S+)(\s*)$/$2$1/;
        pop @seq_stack;
-       my $errmsg = "*** WARNING: unterminated ${cmd}${ldelim}...${rdelim}".
+       my $errmsg = "*** ERROR: unterminated ${cmd}${ldelim}...${rdelim}".
                     " at line $line in file $file\n";
        (ref $errorsub) and &{$errorsub}($errmsg)
            or (defined $errorsub) and $self->$errorsub($errmsg)
@@ -946,8 +960,7 @@ sub parse_paragraph {
         ## and whatever sequence of characters was used to separate them
         $pfx = $1;
         $_ = substr($text, length $pfx);
-        $sep = /(\s+)(?=\S)/ ? $1 : '';
-        ($cmd, $text) = split(" ", $_, 2);
+        ($cmd, $sep, $text) = split /(\s+)/, $_, 2; 
         ## If this is a "cut" directive then we dont need to do anything
         ## except return to "cutting" mode.
         if ($cmd eq 'cut') {
@@ -1026,6 +1039,8 @@ sub parse_from_filehandle {
     my %opts = (ref $_[0] eq 'HASH') ? %{ shift() } : ();
     my ($in_fh, $out_fh) = @_;
     $in_fh = \*STDIN  unless ($in_fh);
+    local *myData = $self;  ## alias to avoid deref-ing overhead
+    local *myOpts = ($myData{_PARSEOPTS} ||= {});  ## get parse-options
     local $_;
 
     ## Put this stream at the top of the stack and do beginning-of-input
@@ -1060,10 +1075,11 @@ sub parse_from_filehandle {
 
         ## See if this line is blank and ends the current paragraph.
         ## If it isnt, then keep iterating until it is.
-        next unless (($textline =~ /^(\s*)$/) && (length $paragraph));
+        next unless (($textline =~ /^([^\S\r\n]*)[\r\n]*$/)
+                                     && (length $paragraph));
 
         ## Issue a warning about any non-empty blank lines
-        if (length($1) > 1  and  ! $self->{_CUTTING}) {
+        if (length($1) > 1 and $myOpts{'-warnings'} and ! $myData{_CUTTING}) {
             my $errorsub = $self->errorsub();
             my $file = $self->input_file();
             my $errmsg = "*** WARNING: line containing nothing but whitespace".
@@ -1133,7 +1149,7 @@ sub parse_from_file {
     my $self = shift;
     my %opts = (ref $_[0] eq 'HASH') ? %{ shift() } : ();
     my ($infile, $outfile) = @_;
-    my ($in_fh,  $out_fh);
+    my ($in_fh,  $out_fh) = (gensym, gensym)  if ($] < 5.6);
     my ($close_input, $close_output) = (0, 0);
     local *myData = $self;
     local $_;
@@ -1154,7 +1170,7 @@ sub parse_from_file {
     else {
         ## We have a filename, open it for reading
         $myData{_INFILE} = $infile;
-        $in_fh = FileHandle->new("< $infile") or
+        open($in_fh, "< $infile")  or
              croak "Can't open $infile for reading: $!\n";
         $close_input = 1;
     }
@@ -1184,13 +1200,14 @@ sub parse_from_file {
         elsif (ref $outfile) {
             ## Must be a filehandle-ref (or else assume its a ref to an
             ## object that supports the common IO write operations).
-            $myData{_OUTFILE} = ${$outfile};;
+            $myData{_OUTFILE} = ${$outfile};
             $out_fh = $outfile;
         }
         else {
             ## We have a filename, open it for writing
             $myData{_OUTFILE} = $outfile;
-            $out_fh = FileHandle->new("> $outfile") or
+            (-d $outfile) and croak "$outfile is a directory, not POD input!\n";
+            open($out_fh, "> $outfile")  or
                  croak "Can't open $outfile for writing: $!\n";
             $close_output = 1;
         }
@@ -1292,7 +1309,7 @@ key/value pairs and the specified parse-option names are set to the
 given values. Any unspecified parse-options are unaffected.
 
             ## Set them back to the default
-            $parser->parseopts(-process_cut_cmd => 0);
+            $parser->parseopts(-warnings => 0);
 
 When passed a single hash-ref, B<parseopts> uses that hash to completely
 reset the existing parse-options, all previous parse-option values
@@ -1301,7 +1318,7 @@ are lost.
             ## Reset all options to default 
             $parser->parseopts( { } );
 
-See L<"PARSING OPTIONS"> for more for the name and meaning of each
+See L<"PARSING OPTIONS"> for more information on the name and meaning of each
 parse-option currently recognized.
 
 =cut

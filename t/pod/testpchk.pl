@@ -10,6 +10,7 @@ BEGIN {
    import TestCompare;
    my $PARENTDIR = dirname $THISDIR;
    push @INC, map { File::Spec->catfile($_, 'lib') } ($PARENTDIR, $THISDIR);
+   require VMS::Filespec if $^O eq 'VMS';
 }
 
 use Pod::Checker;
@@ -62,8 +63,13 @@ sub testpodcheck( @ ) {
       return  $msg;
    }
 
-   print "+ Running podchecker for '$testname'...\n";
+   print "# Running podchecker for '$testname'...\n";
    ## Compare the output against the expected result
+   if ($^O eq 'VMS') {
+      for ($infile, $outfile, $cmpfile) {
+         $_ = VMS::Filespec::unixify($_)  unless  ref;
+      }
+   }
    podchecker($infile, $outfile);
    if ( testcmp({'-cmplines' => \&msgcmp}, $outfile, $cmpfile) ) {
        $different = "$outfile is different from $cmpfile";
@@ -96,12 +102,12 @@ sub testpodchecker( @ ) {
       if ($opts{'-xrgen'}) {
           if ($opts{'-force'} or ! -e $cmpfile) {
              ## Create the comparison file
-             print "+ Creating expected result for \"$testname\"" .
+             print "# Creating expected result for \"$testname\"" .
                    " podchecker test ...\n";
              podchecker($podfile, $cmpfile);
           }
           else {
-             print "+ File $cmpfile already exists" .
+             print "# File $cmpfile already exists" .
                    " (use '-force' to regenerate it).\n";
           }
           next;
@@ -113,13 +119,13 @@ sub testpodchecker( @ ) {
                         -Cmp => $cmpfile;
       if ($failmsg) {
           ++$failed;
-          print "+\tFAILED. ($failmsg)\n";
+          print "#\tFAILED. ($failmsg)\n";
 	  print "not ok ", $failed+$passes, "\n";
       }
       else {
           ++$passes;
           unlink($outfile);
-          print "+\tPASSED.\n";
+          print "#\tPASSED.\n";
 	  print "ok ", $failed+$passes, "\n";
       }
    }

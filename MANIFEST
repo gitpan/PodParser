@@ -51,13 +51,3 @@ t/pod/podselect.t     -- test input file for processing podselect.PL
 t/pod/podselect.xr    -- expected result from processing podselect.PL
 t/pod/special_seqs.t  -- test-input file for "special" interior sequences
 t/pod/special_seqs.xr -- expected result from processing special_seqs.t
-t/pod/xtra/InputObjects.t  -- test input file for processing InputObjects.pm
-t/pod/xtra/InputObjects.xr -- expected result from processing InputObjects.pm
-t/pod/xtra/Parser.t        -- test input file for processing Parser.pm
-t/pod/xtra/Parser.xr       -- expected result from processing Parser.pm
-t/pod/xtra/PlainText.t     -- expected result from processing PlainText.pm
-t/pod/xtra/PlainText.xr    -- expected result from processing PlainText.pm
-t/pod/xtra/Select.t        -- test input file for processing Select.pm
-t/pod/xtra/Select.xr       -- expected result from processing Select.pm
-t/pod/xtra/Usage.t         -- test input file for processing Usage.pm
-t/pod/xtra/Usage.xr        -- expected result from processing Usage.pm

@@ -1,3 +1,13 @@
+ 11-Mar-2000           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.12
+ + Sync-up with patches from the 5.6 core distribution
+ + Require perl5.005 instead of 5.004 now that 5.6 is almost out
+ + Removed the t/pod/xtra tests from the distribution
+ + Ignore [\n\r] when looking for non-empty blank lines in Pod::Parser
+ + Added VMS file-unixification to test scripts
+
+
  23-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
                        Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
@@ -5,7 +15,7 @@
  + Fixed Pod::Parser warnings about non-empty blank lines in code
  + added note about extraction capabilities of Pod::Checker to README
  + added collection of index entries X<...> (Pod::Checker)
- + extented internal hyperlink node uniqueness check (Pod::Checker)
+ + extended internal hyperlink node uniqueness check (Pod::Checker)
  + added documentation in Pod::Checker for built-in methods
    (nodes, hyperlinks, X<...> entries) 
  + minor cleanups (find_node in Pod::Cache::Item) and changed priority
