@@ -100,7 +100,7 @@ L<Pod::Parser> and L<Pod::Select>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 Based on code for B<Pod::Text::pod2text(1)> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>

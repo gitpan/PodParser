@@ -12,7 +12,7 @@
 
 package Pod::Usage;
 
-$VERSION = 1.06;   ## Current version of this package
+$VERSION = 1.061;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME

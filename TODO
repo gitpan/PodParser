@@ -1,0 +1,40 @@
+
+ TO DO
+ =====
+
+ SHORT TERM
+ ----------
+ * IMPROVE PERFORMANCE!!! (its getting kind of slow)
+
+ * Add the ability to use callbacks _instead_ _of_ inheritance if so
+   desired (or mix+match 'em as you wish). This means that there should
+   be a way to use callbacks instead of inheritance for the equivalent
+   of each of the abstract base class methods that do text processing
+   (like preprocess_xxxxx and {begin,end}_xxxx and others). This will go
+   into a module named Pod::Callbacks.
+
+ * Add some kind of error-message function which adds file/line info
+   to the printed text, and perhaps allow the user to supply their
+   own die/croak and warn/carp criteria.
+
+ LONG TERM
+ ---------
+ * Try and get pod2html and pod2man and the other pod2xxx translators to
+   use Pod::Parser (so they will all use the same uniform and consistent
+   POD parsing engine).
+
+ * Make changes necessary to accommodate Kenneth Albanowski's Pod::Simplify
+   module so that it may use Pod::Parser.
+
+ * See about providing the ability (perhaps via constructor options) to turn
+   off certain unwanted Pod::Parser features in order to improve performance
+   (things like calling preprocess_xxx() methods and/or some other "virtual"
+   member function calls that a subclass might not want to make use of).
+
+ * Try to allow the user to provide a callback function/method which could
+   be used in place of the parse_paragraph() method and/or the command(),
+   verbatim(), and textblock() methods.  Such a callback might be provided
+   as a constructor argument to Pod::Parser.  Perhaps it might be possible
+   to pass the callback method an array of lines or of paragraphs (rather
+   than one input block at a time) if certain options are specified.
+

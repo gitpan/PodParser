@@ -10,14 +10,14 @@
 
 package Pod::InputObjects;
 
-$VERSION = 1.06;   ## Current version of this package
+$VERSION = 1.061;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
 
 =head1 NAME
 
-Pod::InputObjects - objects representing POD input streams, paragraphs, etc.
+Pod::InputObjects - objects representing POD input paragraphs, commands, etc.
 
 =head1 SYNOPSIS
 
@@ -39,12 +39,16 @@ are defined:
 
 =over 4
 
+=begin __PRIVATE__
+
 =item B<Pod::InputSource>
 
 An object corresponding to a source of POD input text. It is mostly a
 wrapper around a filehandle or C<IO::Handle>-type object (or anything
 that implements the C<getline()> method) which keeps track of some
 additional information relevant to the parsing of PODs.
+
+=end __PRIVATE__
 
 =item B<Pod::Paragraph>
 
@@ -84,6 +88,8 @@ package Pod::InputSource;
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =head1 B<Pod::InputSource>
 
 This object corresponds to an input source or stream of POD
@@ -97,9 +103,13 @@ methods/attributes:
 
 =over 4
 
+=end __PRIVATE__
+
 =cut
 
 ##---------------------------------------------------------------------------
+
+=begin __PRIVATE__
 
 =item B<new()>
 
@@ -116,6 +126,8 @@ keyword arguments in the form of a hash. The keyword C<-handle> is
 required and designates the corresponding input handle. The keyword
 C<-name> is optional and specifies the name associated with the input
 handle (typically a file name).
+
+=end __PRIVATE__
 
 =cut
 
@@ -140,6 +152,8 @@ sub new {
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =item B<name()>
 
         my $filename = $pod_input->name();
@@ -149,6 +163,8 @@ This method gets/sets the name of the input source (usually a filename).
 If no argument is given, it returns a string containing the name of
 the input source; otherwise it sets the name of the input source to the
 contents of the given argument.
+
+=end __PRIVATE__
 
 =cut
 
@@ -162,12 +178,16 @@ sub name {
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =item B<handle()>
 
         my $handle = $pod_input->handle();
 
 Returns a reference to the handle object from which input is read (the
 one used to contructed this input source object).
+
+=end __PRIVATE__
 
 =cut
 
@@ -176,6 +196,8 @@ sub handle {
 }
 
 ##---------------------------------------------------------------------------
+
+=begin __PRIVATE__
 
 =item B<was_cutting()>
 
@@ -186,6 +208,8 @@ have returned) immediately before any input was read from this input
 stream. After all input from this stream has been read, the C<cutting>
 state is restored to this value.
 
+=end __PRIVATE__
+
 =cut
 
 sub was_cutting {
@@ -195,7 +219,11 @@ sub was_cutting {
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =back
+
+=end __PRIVATE__
 
 =cut
 
@@ -324,7 +352,8 @@ sub raw_text {
         my $prefix = $pod_para->cmd_prefix();
 
 If this paragraph is a command paragraph, then this method will return 
-the prefix used to denote the command (which should be the string "=").
+the prefix used to denote the command (which should be the string "="
+or "==").
 
 =cut
 
@@ -551,6 +580,8 @@ sub append {
 If this interior sequence is nested inside of another interior
 sequence, then the outer/parent sequence that contains it is
 returned. Otherwise C<undef> is returned.
+
+=cut
 
 sub nested {
    my $self = shift;

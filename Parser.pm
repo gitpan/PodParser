@@ -12,7 +12,7 @@
 
 package Pod::Parser;
 
-$VERSION = 1.06;   ## Current version of this package
+$VERSION = 1.061;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -287,9 +287,10 @@ for details).
 =back
 
 In order to process interior sequences, subclasses implementations of
-this method will probably want invoke the B<interpolate()> method,
-passing it the text block C<$text> as a parameter and then perform any
-desired processing upon the returned result.
+this method will probably want to invoke either B<interpolate()> or
+B<parse_text()>, passing it the text block C<$text>, and the corresponding
+line number in C<$line_num>, and then perform any desired processing upon
+the returned result.
 
 The base class implementation of this method simply prints the text block
 as it occurred in the input stream).
@@ -323,15 +324,13 @@ object which contains further information about the interior sequence.
 Please see L<Pod::InputObjects> for details if you need to access this
 additional information.
 
-Subclass implementations of this method may wish to invoke the the
-B<sequence_commands()> method to examine the set of interior sequence
-commands that are in the middle of being processed (there might be
-several such sequence commands if nested interior sequences appear in
-the input). See L<"sequence_commands()">.
+Subclass implementations of this method may wish to invoke the 
+B<nested()> method of C<$pod_seq> to see if it is nested inside
+some other interior-sequence (and if so, which kind).
 
-The base class implementation of the B<interior_sequence()> method simply
-returns the raw text of the of the interior sequence (as it occurred in
-the input) to the caller.
+The base class implementation of the B<interior_sequence()> method
+simply returns the raw text of the interior sequence (as it occurred
+in the input) to the caller.
 
 =cut
 
@@ -522,12 +521,8 @@ parameter C<$text> is the input line; and the parameter C<$line_num> is
 the line number of the corresponding text line.
 
 The value returned should correspond to the new text to use in its
-place.
-If the empty string or an undefined value is returned then no further
-process will be performed for this line. If desired, this method can
-call the B<parse_paragraph()> method directly with any preprocessed
-text and return an empty string (to indicate that no further processing
-is needed).
+place.  If the empty string or an undefined value is returned then no
+further processing will be performed for this line.
 
 Please note that the B<preprocess_line()> method is invoked I<before>
 the B<preprocess_paragraph()> method. After all (possibly preprocessed)
@@ -561,11 +556,12 @@ The value returned should correspond to the new text to use in its
 place If the empty string is returned or an undefined value is
 returned, then the given C<$text> is ignored (not processed).
 
-This method is invoked by B<parse_paragraph()>. After it returns,
-B<parse_paragraph()> examines the current cutting state (which is
-returned by C<$self-E<gt>cutting()>). If it evaluates to false then
-input text (including the given C<$text>) is cut (not processed) until
-the next POD directive is encountered.
+This method is invoked after gathering up all thelines in a paragraph
+but before trying to further parse or interpret them. After
+B<preprocess_paragraph()> returns, the current cutting state (which
+is returned by C<$self-E<gt>cutting()>) is examined. If it evaluates
+to false then input text (including the given C<$text>) is cut (not
+processed) until the next POD directive is encountered.
 
 Please note that the B<preprocess_line()> method is invoked I<before>
 the B<preprocess_paragraph()> method. After all (possibly preprocessed)
@@ -716,6 +712,8 @@ sub interpolate {
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =head1 B<parse_paragraph()>
 
             $parser->parse_paragraph($text, $line_num);
@@ -726,6 +724,8 @@ with its corresponding line number, and invokes the appropriate method
 (one of B<command()>, B<verbatim()>, or B<textblock()>).
 
 This method does I<not> usually need to be overridden by subclasses.
+
+=end __PRIVATE__
 
 =cut
 
@@ -831,7 +831,7 @@ array of strings).
 Using C<$in_fh-E<gt>getline()>, input is read line-by-line and assembled
 into paragraphs or "blocks" (which are separated by lines containing
 nothing but whitespace). For each block of POD documentation
-encountered it will call the B<parse_paragraph()> method.
+encountered it will invoke a method to parse the given paragraph.
 
 If a second argument is given then it should correspond to a filehandle where
 output should be sent (otherwise the default output filehandle is
@@ -888,12 +888,12 @@ sub parse_from_filehandle {
         next unless (($textline =~ /^\s*$/) && (length $paragraph));
 
         ## Now process the paragraph
-        $self->parse_paragraph($paragraph, $nlines - $plines);
+        parse_paragraph($self, $paragraph, $nlines - $plines);
         $paragraph = '';
     }
     ## Dont forget about the last paragraph in the file
     if (length $paragraph) {
-       $self->parse_paragraph($paragraph, $nlines - $plines)
+       parse_paragraph($self, $paragraph, $nlines - $plines)
     }
 
     ## Now pop the input stream off the top of the input stack.
@@ -976,7 +976,7 @@ sub parse_from_file {
     ## NOTE: we need to be *very* careful when "defaulting" the output
     ## file. We only want to use a default if this is the beginning of
     ## the entire document (but *not* if this is an included file). We
-    ## determine this by seeing the input stream stack has been set-up
+    ## determine this by seeing if the input stream stack has been set-up
     ## already
     ## 
     unless ((defined $outfile) && (length $outfile)) {
@@ -1115,6 +1115,8 @@ sub input_handle {
 
 ##---------------------------------------------------------------------------
 
+=begin __PRIVATE__
+
 =head1 B<input_streams()>
 
             $listref = $parser->input_streams();
@@ -1139,6 +1141,8 @@ This method might be invoked when printing diagnostic messages, for example,
 to obtain the name and line number of the all input files that are currently
 being processed.
 
+=end __PRIVATE__
+
 =cut
 
 sub input_streams {
@@ -1146,6 +1150,8 @@ sub input_streams {
 }
 
 ##---------------------------------------------------------------------------
+
+=begin __PRIVATE__
 
 =head1 B<top_stream()>
 
@@ -1159,6 +1165,8 @@ if the input stack is empty.
 
 This method might be used when printing diagnostic messages, for example,
 to obtain the name and line number of the current input file.
+
+=end __PRIVATE__
 
 =cut
 
@@ -1301,16 +1309,21 @@ sub _pop_input_stream {
 
 =head1 SEE ALSO
 
-See L<Pod::Select> and L<Pod::Callbacks>.
+L<Pod::InputObjects>, L<Pod::Select>
+
+B<Pod::InputObjects> defines POD input objects corresponding to
+command paragraphs, parse-trees, and interior-sequences.
 
 B<Pod::Select> is a subclass of B<Pod::Parser> which provides the ability
 to selectively include and/or exclude sections of a POD document from being
 translated based upon the current heading, subheading, subsubheading, etc.
 
-B<Pod::Callbacks> is a subclass of B<Pod::Parser> which gives
-its users the ability the employ I<callback functions> instead of, or in
-addition to, overriding methods of the base class.
+=for __PRIVATE__
+B<Pod::Callbacks> is a subclass of B<Pod::Parser> which gives its users
+the ability the employ I<callback functions> instead of, or in addition
+to, overriding methods of the base class.
 
+=for __PRIVATE__
 B<Pod::Select> and B<Pod::Callbacks> do not override any
 methods nor do they define any new methods with the same name. Because
 of this, they may I<both> be used (in combination) as a base class of

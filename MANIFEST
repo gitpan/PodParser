@@ -1,5 +1,7 @@
-README       -- This file
+CHANGES      -- Change history
+README       -- Main information file
 MANIFEST     -- This shipping list
+TODO         -- Tentative "to do" list for future development
 Makefile.PL  -- Perl Makefile template
 InputObjects.pm -- Input objects for Pod::Parser
 Parser.pm    -- The Pod::Parser module source
