@@ -108,6 +108,44 @@ QUICK OVERVIEW
     of the input parsing for you and leave you free to worry about how to
     intepret the commands and translate the result.
 
+    Note that all we have described here in this quick overview overview is
+    the simplest most striaghtforward use of Pod::Parser to do stream-based
+    parsing. It is also possible to use the Pod::Parser::parse_text function
+    to do more sophisticated tree-based parsing. See the section on
+    "TREE-BASED PARSING".
+
+PARSING OPTIONS
+    A *parse-option* is simply a named option of Pod::Parser with a value
+    that corresponds to a certain specified behavior. These various
+    behaviors of Pod::Parser may be enabled/disabled by setting or or
+    unsetting one or more *parse-options* using the parseopts() method. The
+    set of currently accepted parse-options is as follows:
+
+    -want_nonPODs (default: unset)
+       Normally (by default) Pod::Parser will only provide access to the POD
+       sections of the input. Input paragraphs that are not part of the
+       POD-format documentation are not made available to the caller (not
+       even using preprocess_paragraph()). Setting this option to a
+       non-empty, non-zero value will allow preprocess_paragraph() to see
+       non-POD sectioins of the input as well as POD sections. The cutting()
+       method can be used to determine if the corresponding paragraph is a
+       POD paragraph, or some other input paragraph.
+
+    -process_cut_cmd (default: unset)
+       Normally (by default) Pod::Parser handles the `=cut' POD directive by
+       itself and does not pass it on to the caller for processing. Setting
+       this option to non-empty, non-zero value will cause Pod::Parser to
+       pass the `=cut' directive to the caller just like any other POD
+       command (and hence it may be processed by the command() method).
+
+       Pod::Parser will still interpret the `=cut' directive to mean that
+       "cutting mode" has been (re)entered, but the caller will get a chance
+       to capture the actual `=cut' paragraph itself for whatever purpose it
+       desires.
+
+    Please see the section on "parseopts()" for a complete description of
+    the interface for the setting and unsetting of parse-options.
+
 RECOMMENDED SUBROUTINE/METHOD OVERRIDES
     Pod::Parser provides several methods which most subclasses will probably
     want to override. These methods are as follows:
@@ -355,8 +393,9 @@ preprocess_paragraph()
 
 METHODS FOR PARSING AND PROCESSING
     Pod::Parser provides several methods to process input text. These
-    methods typically won't need to be overridden, but subclasses may want
-    to invoke them to exploit their functionality.
+    methods typically won't need to be overridden (and in some cases they
+    can't be overridden), but subclasses may want to invoke them to exploit
+    their functionality.
 
 parse_text()
                 $ptree1 = $parser->parse_text($text, $line_num);
@@ -402,6 +441,30 @@ parse_text()
        is a reference to the interior-sequence object. [*NOTE*: If the
        interior_sequence() method is specified, then it is invoked according
        to the interface specified in the section on "interior_sequence()"].
+
+    -expand_text => *code-ref*|*method-name*
+       Normally, the parse-tree returned by parse_text() will contain a
+       text-string for each contiguous sequence of characters outside of an
+       interior-sequence. Specifying -expand_text tells parse_text() to
+       "preprocess" every such text-string it sees by invoking the
+       referenced function (or named method of the parser object) and using
+       the return value as the preprocessed (or "expanded") result. [Note
+       that if the result is an interior-sequence, then it will *not* be
+       expanded as specified by the -expand_seq option; Any such recursive
+       expansion needs to be handled by the specified callback routine.]
+
+       If a subroutine reference was given, it is invoked as:
+
+         &$code_ref( $parser, $text, $ptree_node )
+
+       and if a method-name was given, it is invoked as:
+
+         $parser->method_name( $text, $ptree_node )
+
+       where `$parser' is a reference to the parser object, `$text' is the
+       text-string encountered, and `$ptree_node' is a reference to the
+       current node in the parse-tree (usually an interior-sequence object
+       or else the top-level node of the parse-tree).
 
     -expand_ptree => *code-ref*|*method-name*
        Rather than returning a `Pod::ParseTree', pass the parse-tree as an
@@ -525,6 +588,39 @@ cutting()
     Sets the current `cutting' state to the given value and returns the
     result.
 
+parseopts()
+    When invoked with no additional arguments, parseopts returns a hashtable
+    of all the current parsing options.
+
+                ## See if we are parsing non-POD sections as well as POD ones
+                my %opts = $parser->parseopts();
+                $opts{'-want_nonPODs}' and print "-want_nonPODs\n";
+
+    When invoked using a single string, parseopts treats the string as the
+    name of a parse-option and returns its corresponding value if it exists
+    (returns `undef' if it doesn't).
+
+                ## Did we ask to see '=cut' paragraphs?
+                my $want_cut = $parser->parseopts('-process_cut_cmd');
+                $want_cut and print "-process_cut_cmd\n";
+
+    When invoked with multiple arguments, parseopts treats them as key/value
+    pairs and the specified parse-option names are set to the given values.
+    Any unspecified parse-options are unaffected.
+
+                ## Set them back to the default
+                $parser->parseopts(-process_cut_cmd => 0);
+
+    When passed a single hash-ref, parseopts uses that hash to completely
+    reset the existing parse-options, all previous parse-option values are
+    lost.
+
+                ## Reset all options to default 
+                $parser->parseopts( { } );
+
+    See the section on "PARSING OPTIONS" for more for the name and meaning
+    of each parse-option currently recognized.
+
 output_file()
                 $fname = $parser->output_file();
 
@@ -556,6 +652,159 @@ PRIVATE METHODS AND DATA
     returned by the new() constructor for this class. The names of all
     private methods and data-fields used by Pod::Parser begin with a prefix
     of "_" and match the regular expression `/^_\w+$/'.
+
+TREE-BASED PARSING
+    If straightforward stream-based parsing wont meet your needs (as is
+    likely the case for tasks such as translating PODs into structured
+    markup languages like HTML and XML) then you may need to take the
+    tree-based approach. Rather than doing everything in one pass and
+    calling the interpolate() method to expand sequences into text, it may
+    be desirable to instead create a parse-tree using the parse_text()
+    method to return a tree-like structure which may contain an ordered list
+    list of children (each of which may be a text-string, or a similar
+    tree-like structure).
+
+    Pay special attention to the section on "METHODS FOR PARSING AND
+    PROCESSING" and to the objects described in the Pod::InputObjects
+    manpage. The former describes the gory details and parameters for how to
+    customize and extend the parsing behavior of Pod::Parser.
+    Pod::InputObjects provides several objects that may all be used
+    interchangeably as parse-trees. The most obvious one is the
+    Pod::ParseTree object. It defines the basic interface and functionality
+    that all things trying to be a POD parse-tree should do. A
+    Pod::ParseTree is defined such that each "node" may be a text-string, or
+    a reference to another parse-tree. Each Pod::Paragraph object and each
+    Pod::InteriorSequence object also supports the basic parse-tree
+    interface.
+
+    The parse_text() method takes a given paragraph of text, and returns a
+    parse-tree that contains one or more children, each of which may be a
+    text-string, or an InteriorSequence object. There are also
+    callback-options that may be passed to parse_text() to customize the way
+    it expands or transforms interior-sequences, as well as the returned
+    result. These callbacks can be used to create a parse-tree with
+    custom-made objects (which may or may not support the parse-tree
+    interface, depending on how you choose to do it).
+
+    If you wish to turn an entire POD document into a parse-tree, that
+    process is fairly straightforward. The parse_text() method is the key to
+    doing this successfully. Every paragraph-callback (i.e. the polymorphic
+    methods for command(), verbatim(), and textblock() paragraphs) takes a
+    Pod::Paragraph object as an argument. Each paragraph object has a
+    parse_tree() method that can be used to get or set a corresponding
+    parse-tree. So for each of those paragraph-callback methods, simply call
+    parse_text() with the options you desire, and then use the returned
+    parse-tree to assign to the given paragraph object.
+
+    That gives you a parse-tree for each paragraph - so now all you need is
+    an ordered list of paragraphs. You can maintain that yourself as a data
+    element in the object/hash. The most straightforward way would be simply
+    to use an array-ref, with the desired set of custom "options" for each
+    invocation of parse_text. Let's assume the desired option-set is given
+    by the hash `%options'. Then we might do something like the following:
+
+        package MyPodParserTree;
+
+        @ISA = qw( Pod::Parser );
+
+        ...
+
+        sub begin_pod {
+            my $self = shift;
+            $self->{'-paragraphs'} = [];  ## initialize paragraph list
+        }
+
+        sub command { 
+            my ($parser, $command, $paragraph, $line_num, $pod_para) = @_;
+            my $ptree = $parser->parse_text({%options}, $paragraph, ...);
+            $pod_para->parse_tree( $ptree );
+            push @{ $self->{'-paragraphs'} }, $pod_para;
+        }
+
+        sub verbatim { 
+            my ($parser, $paragraph, $line_num, $pod_para) = @_;
+            push @{ $self->{'-paragraphs'} }, $pod_para;
+        }
+
+        sub textblock { 
+            my ($parser, $paragraph, $line_num, $pod_para) = @_;
+            my $ptree = $parser->parse_text({%options}, $paragraph, ...);
+            $pod_para->parse_tree( $ptree );
+            push @{ $self->{'-paragraphs'} }, $pod_para;
+        }
+
+        ...
+
+        package main;
+        ...
+        my $parser = new MyPodParserTree(...);
+        $parser->parse_from_file(...);
+        my $paragraphs_ref = $parser->{'-paragraphs'};
+
+    Of course, in this module-author's humble opinion, I'd be more inclined
+    to use the existing Pod::ParseTree object than a simple array. That way
+    everything in it, paragraphs and sequences, all respond to the same core
+    interface for all parse-tree nodes. The result would look something
+    like:
+
+        package MyPodParserTree2;
+
+        ...
+
+        sub begin_pod {
+            my $self = shift;
+            $self->{'-ptree'} = new Pod::ParseTree;  ## initialize parse-tree
+        }
+
+        sub parse_tree {
+            ## convenience method to get/set the parse-tree for the entire POD
+            (@_ > 1)  and  $_[0]->{'-ptree'} = $_[1];
+            return $_[0]->{'-ptree'};
+        }
+
+        sub command { 
+            my ($parser, $command, $paragraph, $line_num, $pod_para) = @_;
+            my $ptree = $parser->parse_text({<<options>>}, $paragraph, ...);
+            $pod_para->parse_tree( $ptree );
+            $parser->parse_tree()->append( $pod_para );
+        }
+
+        sub verbatim { 
+            my ($parser, $paragraph, $line_num, $pod_para) = @_;
+            $parser->parse_tree()->append( $pod_para );
+        }
+
+        sub textblock { 
+            my ($parser, $paragraph, $line_num, $pod_para) = @_;
+            my $ptree = $parser->parse_text({<<options>>}, $paragraph, ...);
+            $pod_para->parse_tree( $ptree );
+            $parser->parse_tree()->append( $pod_para );
+        }
+
+        ...
+
+        package main;
+        ...
+        my $parser = new MyPodParserTree2(...);
+        $parser->parse_from_file(...);
+        my $ptree = $parser->parse_tree;
+        ...
+
+    Now you have the entire POD document as one great big parse-tree. You
+    can even use the -expand_seq option to parse_text to insert whole
+    different kinds of objects. Just don't expect Pod::Parser to know what
+    to do with them after that. That will need to be in your code. Or,
+    alternatively, you can insert any object you like so long as it conforms
+    to the Pod::ParseTree interface.
+
+    One could use this to create subclasses of Pod::Paragraphs and
+    Pod::InteriorSequences for specific commands (or to create your own
+    custom node-types in the parse-tree) and add some kind of emit() method
+    to each custom node/subclass object in the tree. Then all you'd need to
+    do is recursively walk the tree in the desired order, processing the
+    children (most likely from left to right) by formatting them if they are
+    text-strings, or by calling their emit() method if they are
+    objects/references.
 
 SEE ALSO
     the Pod::InputObjects manpage, the Pod::Select manpage

@@ -1,3 +1,18 @@
+ 25-Sep-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.085
+ + Added a section on tree-based parsing to the PODs for Pod::Parser
+ + Added '-expand_text" callback-option to Pod::Parser::parse_text()
+ + Added ability to specify contents for Pod::InteriorSequence::new
+ + Added the notion of "parse-options" to enable/disable certain
+   parsing behaviors  (see the section on "PARSING OPTIONS"
+   in the documentation for Pod::Parser)
+ + Added Pod::Parser::parseopts()
+ + Added the '-want_nonPODs' parse-option
+ + Added the '-process_cut_cmd' parse-option
+ + Fixed the '*child2parent*' functions in InputObjects so that they
+   dont invoke "can" or "isa" for unblessed scalar-refs.
+
  03-Sep-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.084
