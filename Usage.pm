@@ -12,8 +12,8 @@
 
 package Pod::Usage;
 
-$VERSION = 1.05;   ## Current version of this package
-require  5.003;    ## requires this Perl version or later
+$VERSION = 1.06;   ## Current version of this package
+require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
 
@@ -103,6 +103,18 @@ exit value is less than 2 (in which case the default is C<\*STDOUT>).
 A reference to a filehandle, or the pathname of a file from which the
 invoking script's pod documentation should be read.  It defaults to the
 file indicated by C<$0> (C<$PROGRAM_NAME> for users of F<English.pm>).
+
+=item C<-pathlist>
+
+A list of directory paths. If the input file does not exist, then it
+will be searched for in the given directory list (in the order the
+directories appear in the list). It defaults to the list of directories
+implied by C<$ENV{PATH}>. The list may be specified either by a reference
+to an array, or by a string of directory paths which use the same path
+separator as C<$ENV{PATH}> on your system (e.g., C<:> for Unix, C<;> for
+MSWin32 and DOS).
+
+fully specified
 
 =back
 
@@ -325,16 +337,17 @@ things:
 By default, B<pod2usage()> will use C<$0> as the path to the pod input
 file.  Unfortunately, not all systems on which Perl runs will set C<$0>
 properly (although if C<$0> isn't found, B<pod2usage()> will search
-C<$ENV{PATH}>).  If this is the case for your system, you may need to
-explicitly specify the path to the pod docs for the invoking script
-using something similar to the following:
+C<$ENV{PATH}> or else the list specified by the C<-pathlist> option).
+If this is the case for your system, you may need to explicitly specify
+the path to the pod docs for the invoking script using something
+similar to the following:
 
     pod2usage(-exitval => 2, -input => "/path/to/your/pod/docs");
 
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 Based on code for B<Pod::Text::pod2text()> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
@@ -364,12 +377,8 @@ use Pod::PlainText;
 ## Function definitions begin here
 ##---------------------------------
 
-sub version {
-    return  $VERSION;
-}
-
 sub pod2usage {
-    local($_) = @_;
+    local($_) = @_ || "";
     my %opts;
     ## Collect arguments
     if (@_ > 1) {
@@ -387,7 +396,7 @@ sub pod2usage {
     }
     else {
         ## User passed in a message to print before issuing usage.
-        $opts{"-message"} = $_;
+        $_  and  $opts{"-message"} = $_;
     }
 
     ## Need this for backward compatibility since we formerly used
@@ -423,10 +432,15 @@ sub pod2usage {
     ## Look up input file in path if it doesnt exist.
     unless ((ref $opts{"-input"}) || (-e $opts{"-input"})) {
         my ($dirname, $basename) = ('', $opts{"-input"});
-        for $dirname (split(':', $ENV{PATH})) {
+        my ($pathsep, $dirsep) = ($^O =~ /^(?:dos|os2|MSWin32)$/)
+                                        ? (";", "\\")  :  (":", "/");
+        my $pathspec = $opts{"-pathlist"} || $ENV{PATH};
+        my @paths = (ref $pathspec) ? @$pathspec : split($pathsep, $pathspec);
+        for $dirname (@paths) {
             ## It would be nice if I could do this without hardcoding
             ## the '/' (which might not work for non-Unix systems).
-            $_ = "${dirname}/${basename}";
+            $_ = (length $dirname) ? $dirname . $dirsep . $basename
+                                   : $basename;
             last if (-e $_) && ($opts{"-input"} = $_);
         }
     }
@@ -474,7 +488,8 @@ sub begin_pod {
 
 sub preprocess_paragraph {
     my $self = shift;
-    local($_) = shift;
+    local $_ = shift;
+    my $line = shift;
     ## See if this is a heading and we arent printing the entire manpage.
     if (($self->{USAGE_OPTIONS}->{-verbose} < 2) && /^=head/o) {
         ## Change the title of the SYNOPSIS section to USAGE
@@ -483,6 +498,7 @@ sub preprocess_paragraph {
         s{([A-Z])([A-Z]+)}{((length($2) > 2) ? $1 : lc($1)) . lc($2)}ge;
         ## Use a colon to end all headings
         s/\s*$/:/o  unless (/:\s*$/o);
+        $_ .= "\n";
     }
     return  $self->SUPER::preprocess_paragraph($_);
 }

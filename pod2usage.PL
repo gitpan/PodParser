@@ -64,6 +64,7 @@ pod2usage - print usage messages from embedded pod docs in files
 [B<-exit>S< >I<exitval>]
 [B<-output>S< >I<outfile>]
 [B<-verbose> I<level>]
+[B<-pathlist> I<dirlist>]
 I<file>
 
 =back
@@ -98,6 +99,12 @@ The desired level of verbosity to use:
     2 : print SYNOPSIS sections and any OPTIONS/ARGUMENTS sections
     3 : print the entire manpage (similar to running pod2text)
 
+=item B<-pathlist> I<dirlist>
+
+Specifies one or more directories to search for the input file if it
+was not supplied with an absolute path. Each directory path in the given
+list should be separated by a ':' on Unix (';' on MSWin32 and DOS).
+
 =item I<file>
 
 The pathname of a file containing pod documentation to be output in
@@ -120,7 +127,7 @@ L<Pod::Usage>, L<pod2text(1)>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 Based on code for B<pod2text(1)> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
@@ -137,6 +144,7 @@ my @opt_specs = (
     "man",
     "exit=i",
     "output=s",
+    "pathlist=s",
     "verbose=i",
 );
 
@@ -155,10 +163,11 @@ if (@ARGV > 1) {
 }
 
 my %usage = ();
-$usage{INPUT}   = shift(@ARGV);
-$usage{EXIT}    = $options{"exit"}     if (defined $options{"exit"});
-$usage{OUTPUT}  = $options{"output"}   if (defined $options{"output"});
-$usage{VERBOSE} = $options{"verbose"}  if (defined $options{"verbose"});
+$usage{-input}    = shift(@ARGV);
+$usage{-exitval}  = $options{"exit"}      if (defined $options{"exit"});
+$usage{-output}   = $options{"output"}    if (defined $options{"output"});
+$usage{-verbose}  = $options{"verbose"}   if (defined $options{"verbose"});
+$usage{-pathlist} = $options{"pathlist"}  if (defined $options{"pathlist"});
 
 pod2usage(\%usage);
 

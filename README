@@ -165,6 +165,8 @@
 
  SHORT TERM
  ----------
+ * IMPROVE PERFORMANCE!!! (its getting kind of slow)
+
  * Add the ability to use callbacks _instead_ _of_ inheritance if so
    desired (or mix+match 'em as you wish). This means that there should
    be a way to use callbacks instead of inheritance for the equivalent
@@ -198,6 +200,53 @@
 
  HISTORY
  =======
+ 22-Oct-1998           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.06
+ + SIGNIFICANT CHANGES (POSSIBLE BACKWARD INCOMPATIBILITIES)
+   * Pod::InputObjects::ParseTree object ADDED. This object corresponds
+     to a parse-tree of parsed pod parapgraph text. Every node in the
+     parse-tree is either a text-string, or a Pod::InteriorSequence
+     that has yet to be expanded.
+
+   * Pod::Parser::parse_text ADDED!!! This routine parses some pod input
+     text and returns a parse-tree as the result. This is VERY useful for
+     people who cant rely on strict bottom-up expansion of interior
+     sequences. Now they can get the parse-tree and expand sequences
+     themselves in whatever order they require.
+
+   * Pod::Parser::interpolate PARAMETER CHANGE, it *no* *longer* takes a
+     regexp as its second parameter!!!  It used to accept a regular
+     expression signifying the end of parsing conditions and pass it to
+     _interpolate_bottom_up.  It now takes a line-number as the second
+     arg.
+
+   * Pod::Parser::_interpolate_bottom_up has been *REMOVED*!! Pod::Parser
+     no longer uses a recursive routine to parse interior sequences.
+
+   * The following Pod::Parser subroutines now take the current line-number
+     as an ADDITIONAL PARAMETER: command, textblock, verbatim, interpolate,
+     preprocess_line, preprocess_paragraph, parse_paragraph.
+
+   * REMOVED the Pod::Parser::total_lines method
+
+   * ADDED the nested() method to Pod::InteriorSequence
+
+   * REMOVED the following methods from Pod::InputSource: num_lines,
+     file_line, and ADDED the method filename instead.
+
+   * REMOVED the _CMD_SEQUENCES data-field and sequences() method from
+     Pod::Parser.  If you need to know the parent of a nested interior
+     sequence, then invoke the nested() method of that sequence.
+
+ + OTHER CHANGES
+   - Added the "-pathlist" options to Pod::Usage and pod2usage
+   - Made Pod::Usage a tad more portable for DOS and MSWin32
+   - Got rid of a rogue '#' in podselect that was in front of a needed
+     "use" statement.
+   - Fixed a bug in Pod::Parser::_interpolate_bottom_up that made it stop
+     interpolating interior sequences after the first line of a paragraph.
+
  12-Feb-1998           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.05
@@ -209,7 +258,7 @@
  22-Dec-1997           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.04
- - SIGNIFICANT CHANGES
+ + SIGNIFICANT CHANGES
    * Created a Pod/InputObjects.pm and moved the details of input streams
      and interior sequences into appropriately named objects defined
      in this file.
@@ -224,7 +273,7 @@
  24-Sep-1997           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.03 (major revision)
- - SIGNIFICANT CHANGES
+ + SIGNIFICANT CHANGES
    * If a POD directive begins with '==' instead of '=', then that line
      is considered a paragraph by itself (you dont need a blank line
      before you begin the next paragraph). NOTE that this only works

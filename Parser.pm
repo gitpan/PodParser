@@ -12,8 +12,8 @@
 
 package Pod::Parser;
 
-$VERSION = 1.05;   ## Current version of this package
-require  5.003;    ## requires this Perl version or later
+$VERSION = 1.06;   ## Current version of this package
+require  5.004;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -29,28 +29,28 @@ Pod::Parser - base class for creating POD filters and translators
     @ISA = qw(Pod::Parser);
 
     sub command { 
-        my ($parser, $command, $paragraph) = @_;
+        my ($parser, $command, $paragraph, $line_num) = @_;
         ## Interpret the command and its text; sample actions might be:
         if ($command eq 'head1') { ... }
         elsif ($command eq 'head2') { ... }
         ## ... other commands and their actions
         my $out_fh = $parser->output_handle();
-        my $expansion = $parser->interpolate($paragraph);
+        my $expansion = $parser->interpolate($paragraph, $line_num);
         print $out_fh $expansion;
     }
 
     sub verbatim { 
-        my ($parser, $paragraph) = @_;
+        my ($parser, $paragraph, $line_num) = @_;
         ## Format verbatim paragraph; sample actions might be:
         my $out_fh = $parser->output_handle();
         print $out_fh $paragraph;
     }
 
     sub textblock { 
-        my ($parser, $paragraph) = @_;
+        my ($parser, $paragraph, $line_num) = @_;
         ## Translate/Format this block of text; sample actions might be:
         my $out_fh = $parser->output_handle();
-        my $expansion = $parser->interpolate($paragraph);
+        my $expansion = $parser->interpolate($paragraph, $line_num);
         print $out_fh $expansion;
     }
 
@@ -73,7 +73,7 @@ Pod::Parser - base class for creating POD filters and translators
 
 =head1 REQUIRES
 
-perl5.003, Pod::InputObjects, Exporter, FileHandle, Carp
+perl5.004, Pod::InputObjects, Exporter, FileHandle, Carp
 
 =head1 EXPORTS
 
@@ -157,6 +157,9 @@ use Exporter;
 use FileHandle;
 @ISA = qw(Exporter);
 
+## These "variables" are used as local "glob aliases" for performance
+use vars qw(%myData @input_stack);
+
 #############################################################################
 
 =head1 RECOMMENDED SUBROUTINE/METHOD OVERRIDES
@@ -170,17 +173,34 @@ want to override. These methods are as follows:
 
 =head1 B<command()>
 
-            $parser->command($cmd,$text,$pod_para);
+            $parser->command($cmd,$text,$line_num,$pod_para);
 
 This method should be overridden by subclasses to take the appropriate
 action when a POD command paragraph (denoted by a line beginning with
 "=") is encountered. When such a POD directive is seen in the input,
-this method is called and is passed the command name C<$cmd>, and the
-remainder of the text paragraph C<$text>, which appears immediately after
-the command name. The C<$pod_para> argument is a reference to a 
-C<Pod::Paragraph> object which contains further information about the
-paragraph command. Please see L<Pod::InputObjects> for details if
-you need to access this additional information.
+this method is called and is passed:
+
+=over 3
+
+=item C<$cmd>
+
+the name of the command for this POD paragraph
+
+=item C<$text>
+
+the paragraph text for the given POD paragraph command.
+
+=item C<$line_num>
+
+the line-number of the beginning of the paragraph
+
+=item C<$pod_para>
+
+a reference to a C<Pod::Paragraph> object which contains further
+information about the paragraph command (see L<Pod::InputObjects>
+for details).
+
+=back
 
 B<Note> that this method I<is> called for C<=pod> paragraphs.
 
@@ -191,21 +211,39 @@ method with the command paragraph).
 =cut
 
 sub command {
-    my ($self, $cmd, $text, $pod_para)  = @_;
+    my ($self, $cmd, $text, $line_num, $pod_para)  = @_;
     ## Just treat this like a textblock
-    $self->textblock($pod_para->raw_text());
+    $self->textblock($pod_para->raw_text(), $line_num, $pod_para);
 }
 
 ##---------------------------------------------------------------------------
 
 =head1 B<verbatim()>
 
-            $parser->verbatim($text);
+            $parser->verbatim($text,$line_num,$pod_para);
 
 
 This method may be overridden by subclasses to take the appropriate
 action when a block of verbatim text is encountered. It is passed the
-text block C<$text> as a parameter.
+following parameters:
+
+=over 3
+
+=item C<$text>
+
+the block of text for the verbatim paragraph
+
+=item C<$line_num>
+
+the line-number of the beginning of the paragraph
+
+=item C<$pod_para>
+
+a reference to a C<Pod::Paragraph> object which contains further
+information about the paragraph (see L<Pod::InputObjects>
+for details).
+
+=back
 
 The base class implementation of this method simply prints the textblock
 (unmodified) to the output filehandle.
@@ -213,7 +251,7 @@ The base class implementation of this method simply prints the textblock
 =cut
 
 sub verbatim {
-    my ($self, $text) = @_;
+    my ($self, $text, $line_num, $pod_para) = @_;
     my $out_fh = $self->{_OUTPUT};
     print $out_fh $text;
 }
@@ -222,13 +260,31 @@ sub verbatim {
 
 =head1 B<textblock()>
 
-            $parser->textblock($text);
+            $parser->textblock($text,$line_num,$pod_para);
 
 
 This method may be overridden by subclasses to take the appropriate
 action when a normal block of POD text is encountered (although the base
-class method will usually do what you want). It is passed the text block
-C<$text> as a parameter.
+class method will usually do what you want). It is passed the following
+parameters:
+
+=over 3
+
+=item C<$text>
+
+the block of text for the a POD paragraph
+
+=item C<$line_num>
+
+the line-number of the beginning of the paragraph
+
+=item C<$pod_para>
+
+a reference to a C<Pod::Paragraph> object which contains further
+information about the paragraph (see L<Pod::InputObjects>
+for details).
+
+=back
 
 In order to process interior sequences, subclasses implementations of
 this method will probably want invoke the B<interpolate()> method,
@@ -241,9 +297,9 @@ as it occurred in the input stream).
 =cut
 
 sub textblock {
-    my ($self, $text) = @_;
+    my ($self, $text, $line_num, $pod_para) = @_;
     my $out_fh = $self->{_OUTPUT};
-    print $out_fh $self->interpolate($text);
+    print $out_fh $self->interpolate($text, $line_num);
 }
 
 ##---------------------------------------------------------------------------
@@ -456,18 +512,22 @@ sub end_pod {
 
 =head1 B<preprocess_line()>
 
-          $textline = $parser->preprocess_line($text);
+          $textline = $parser->preprocess_line($text, $line_num);
 
 
-This methods should be overridden by subclasses that wish to perform any
-kind of preprocessing for each I<line> of input (I<before> it has been
-determined whether or not it is part of a POD paragraph). The parameter
-C<$text> is the input line and the value returned should correspond to
-the new text to use in its place. If the empty string or an undefined
-value is returned then no further process will be performed for this
-line. If desired, this method can call the B<parse_paragraph()> method
-directly with any preprocessed text and return an empty string (to
-indicate that no further processing is needed).
+This method should be overridden by subclasses that wish to perform
+any kind of preprocessing for each I<line> of input (I<before> it has
+been determined whether or not it is part of a POD paragraph). The
+parameter C<$text> is the input line; and the parameter C<$line_num> is
+the line number of the corresponding text line.
+
+The value returned should correspond to the new text to use in its
+place.
+If the empty string or an undefined value is returned then no further
+process will be performed for this line. If desired, this method can
+call the B<parse_paragraph()> method directly with any preprocessed
+text and return an empty string (to indicate that no further processing
+is needed).
 
 Please note that the B<preprocess_line()> method is invoked I<before>
 the B<preprocess_paragraph()> method. After all (possibly preprocessed)
@@ -480,7 +540,7 @@ The base class implementation of this method returns the given text.
 =cut
 
 sub preprocess_line {
-    my ($self, $text) = @_;
+    my ($self, $text, $line_num) = @_;
     return  $text;
 }
 
@@ -488,16 +548,18 @@ sub preprocess_line {
 
 =head1 B<preprocess_paragraph()>
 
-            $textblock = $parser->preprocess_paragraph($text);
+            $textblock = $parser->preprocess_paragraph($text, $line_num);
 
 
 This method should be overridden by subclasses that wish to perform any
 kind of preprocessing for each block (paragraph) of POD documentation
 that appears in the input stream. The parameter C<$text> is the POD
-paragraph from the input file and the value returned should correspond
-to the new text to use in its place. If the empty string is returned or
-an undefined value is returned, then the given C<$text> is ignored (not
-processed).
+paragraph from the input file; and the parameter C<$line_num> is the
+line number for the beginning of the corresponding paragraph.
+
+The value returned should correspond to the new text to use in its
+place If the empty string is returned or an undefined value is
+returned, then the given C<$text> is ignored (not processed).
 
 This method is invoked by B<parse_paragraph()>. After it returns,
 B<parse_paragraph()> examines the current cutting state (which is
@@ -516,7 +578,7 @@ The base class implementation of this method returns the given text.
 =cut
 
 sub preprocess_paragraph {
-    my ($self, $text) = @_;
+    my ($self, $text, $line_num) = @_;
     return  $text;
 }
 
@@ -532,54 +594,151 @@ to invoke them to exploit their functionality.
 
 ##---------------------------------------------------------------------------
 
+=head1 B<parse_text()>
+
+            $ptree = $parser->parse_text($text, $line_num);
+
+This method is useful if you need to perform your own interpolation 
+of interior sequences and can't rely upon B<interpolate> to expand
+them in simple bottom-up order order.
+
+The parameter C<$text> is a string or block of text to be parsed
+for interior sequences; and the parameter C<$line_num> is the
+line number curresponding to the beginning of C<$text>.
+
+B<parse_text()> will parse the given text into a parse-tree of "nodes."
+and interior-sequences.  Each "node" in the parse tree is either a
+text-string, or a B<Pod::InteriorSequence>.  The result returned is a
+parse-tree of type B<Pod::ParseTree>. Please see L<Pod::InputObjects>
+for more information about B<Pod::InteriorSequence> and B<Pod::ParseTree>.
+
+=cut
+
+## This global regex is used to see if the text before a '>' inside
+## an interior sequence looks like '-' or '=', but not '--' or '=='
+use vars qw( $ARROW_RE );
+$ARROW_RE = join('', qw{ (?: [^=]+= | [^-]+- )$ });  
+
+sub parse_text {
+    my $self = shift;
+    my %opts = (ref $_[0]) ? %{ shift() } : (-expand => 0);
+
+    local $_ = shift;
+    my $line = shift;
+    my $file = $self->input_file();
+    my ($cmd, $prev)  = ('', '');
+
+    ## Keep track of the "current" interior sequence, and
+    ## maintain a stack of "in progress" sequences
+    my $seq       = Pod::ParseTree->new();
+    my @seq_stack = ($seq = Pod::ParseTree->new);
+
+    ## If we are to "expand" upon parsing (not just shore-up a tree of nodes)
+    ## Then here is the function that will do it for the given sequence
+    my $expand = sub {
+        my $iseq = shift;
+        my $args = join("", $iseq->parse_tree->children);
+        $self->interior_sequence($iseq->name, $args, $iseq)
+    };
+
+    ## Iterate over all sequence starts/stops, newlines, & text
+    ## (NOTE: split with capturing parens keeps the delimiters)
+    for ( split /([A-Z]<|>|\n)/ ) {
+        ## Keep track of line count
+        ++$line  if ($_ eq "\n");
+        ## Look for the beginning of a sequence
+        if ( /^([A-Z])(<)$/ ) {
+            ## Push a new sequence onto the stack on of those "in-progress"
+            $seq = Pod::InteriorSequence->new(
+                       -name   => ($cmd = $1),
+                       -ldelim => $2,     -rdelim => '',
+                       -file   => $file,  -line   => $line
+                   );
+            push @seq_stack, $seq;
+        }
+        ## Look for sequence ending (preclude '->' and '=>' inside C<...>)
+        elsif ( (@seq_stack > 1)  and
+                /^>$/ and ($cmd ne 'C' or $prev !~ /$ARROW_RE/o) )
+        {
+            ## End of current sequence, record terminating delimiter
+            $seq->rdelim($_);
+            ## Pop it off the stack of "in progress" sequences
+            pop @seq_stack;
+            ## Append result to its parent in current parse tree
+            $seq_stack[-1]->append( $opts{-expand} ? &$expand($seq) : $seq );
+            ## Remember the current cmd-name
+            $cmd = (@seq_stack > 1) ? $seq_stack[-1]->name : '';
+        }
+        else {
+            ## In the middle of a sequence, append this text to it
+            $seq->append($_)  if $_;
+        }
+        ## Remember the "current" sequence and the previously seen token
+        ($seq, $prev) = ( $seq_stack[-1], $_ );
+    }
+
+    ## Handle unterminated sequences
+    while (@seq_stack > 1) {
+       ($cmd, $file, $line) = ($seq->name, $seq->file_line);
+       pop @seq_stack;
+       warn "** Unterminated $cmd<...> at $file line $line\n";
+       $seq_stack[-1]->append( $opts{-expand} ? &$expand($seq) : $seq );
+       $seq = $seq_stack[-1];
+    }
+
+    ## Return the resulting parse-tree
+    my $ptree = (pop @seq_stack)->parse_tree;
+    return  $opts{-expand} ? join("", $ptree->children) : $ptree;
+}
+
+##---------------------------------------------------------------------------
+
 =head1 B<interpolate()>
 
-            $textblock = $parser->interpolate($text,$end_re);
-
+            $textblock = $parser->interpolate($text, $line_num);
 
 This method translates all text (including any embedded interior sequences)
-in the given text string C<$text> and returns the interpolated result. If
-a second argument is given, then it is must be a regular expression which,
-when matched in the text, indicates when to quit interpolating the string.
+in the given text string C<$text> and returns the interpolated result. The
+parameter C<$line_num> is the line number corresponding to the beginning
+of C<$text>.
 
 B<interpolate()> merely invokes a private method to recursively expand
 nested interior sequences in bottom-up order (innermost sequences are
-expanded first). Unless there is a need to expand nested sequences in
-some alternate order, this method should probably I<not> be overridden by
-subclasses.
+expanded first). If there is a need to expand nested sequences in
+some alternate order, use B<parse_text> instead.
 
 =cut
 
 sub interpolate {
-    my($self, $text, $end_re) = @_;
-    return  $self->_interpolate_bottom_up($text, $end_re);
+    my($self, $text, $line_num) = @_;
+    return  $self->parse_text({-expand => 1}, $text, $line_num);
 }
 
 ##---------------------------------------------------------------------------
 
 =head1 B<parse_paragraph()>
 
-            $parser->parse_paragraph($text);
+            $parser->parse_paragraph($text, $line_num);
 
 
-This method takes the text of a POD paragraph to be processed and
-invokes the appropriate method (one of B<command()>, B<verbatim()>,
-or B<textblock()>).
+This method takes the text of a POD paragraph to be processed, along
+with its corresponding line number, and invokes the appropriate method
+(one of B<command()>, B<verbatim()>, or B<textblock()>).
 
 This method does I<not> usually need to be overridden by subclasses.
 
 =cut
 
 sub parse_paragraph {
-    my ($self, $text) = @_;
-    my $input_top = $self->{_TOP_STREAM};
+    my ($self, $text, $line_num) = @_;
+    local *myData = $self;  ## an alias to avoid deref-ing overhead
     local $_;
 
     ## This is the end of a non-empty paragraph
     ## Ignore up until next POD directive if we are cutting
-    if ($self->{_CUTTING}) {
-       return  unless ($text =~ /^=/);
-       $self->{_CUTTING} = 0;
+    if ($myData{_CUTTING}) {
+       return  unless ($text =~ /^={1,2}\S/);
+       $myData{_CUTTING} = 0;
     }
 
     ## Now we know this is block of text in a POD section!
@@ -594,13 +753,14 @@ sub parse_paragraph {
     ##-----------------------------------------------------------------
 
     ## Ignore this block if it isnt in one of the selected sections
-    if (exists $self->{_SELECTED_SECTIONS}) {
-        $self->is_selected($text)  or  return ($self->{_CUTTING} = 1);
+    if (exists $myData{_SELECTED_SECTIONS}) {
+        $self->is_selected($text)  or  return ($myData{_CUTTING} = 1);
     }
 
     ## Perform any desired preprocessing and re-check the "cutting" state
-    $text = $self->preprocess_paragraph($text);
-    return 1  if ((! defined $text) || ($text eq "") || ($self->{_CUTTING}));
+    $text = $self->preprocess_paragraph($text, $line_num);
+    return 1  unless ((defined $text) and (length $text));
+    return 1  if ($myData{_CUTTING});
 
     ## Look for one of the three types of paragraphs
     my ($pfx, $cmd, $arg, $sep) = ('', '', '', '');
@@ -616,36 +776,37 @@ sub parse_paragraph {
         ## If this is a "cut" directive then we dont need to do anything
         ## except return to "cutting" mode.
         if ($cmd eq 'cut') {
-           $self->{_CUTTING} = 1;
+           $myData{_CUTTING} = 1;
            return;
         }
-        ## Save the attributes indicating how the command was specified.
-        $pod_para = new Pod::Paragraph(
-              -name      => $cmd,
-              -text      => $text,
-              -prefix    => $pfx,
-              -separator => $sep
-        );
     }
-    $pod_para = new Pod::Paragraph(-text => $text)  unless (defined $pod_para);
+    ## Save the attributes indicating how the command was specified.
+    $pod_para = new Pod::Paragraph(
+          -name      => $cmd,
+          -text      => $text,
+          -prefix    => $pfx,
+          -separator => $sep,
+          -file      => $myData{_INFILE},
+          -line      => $line_num
+    );
     # ## Invoke appropriate callbacks
-    # if (exists $self->{_CALLBACKS}) {
+    # if (exists $myData{_CALLBACKS}) {
     #    ## Look through the callback list, invoke callbacks,
     #    ## then see if we need to do the default actions
     #    ## (invoke_callbacks will return true if we do).
-    #    return  1  unless $self->invoke_callbacks($cmd, $text, $pod_para);
+    #    return  1  unless $self->invoke_callbacks($cmd, $text, $line_num, $pod_para);
     # }
-    if ($cmd ne '') {
+    if (length $cmd) {
         ## A command paragraph
-        $self->command($cmd, $text, $pod_para);
+        $self->command($cmd, $text, $line_num, $pod_para);
     }
     elsif ($text =~ /^\s+/) {
         ## Indented text - must be a verbatim paragraph
-        $self->verbatim($text);
+        $self->verbatim($text, $line_num, $pod_para);
     }
     else {
         ## Looks like an ordinary block of text
-        $self->textblock($text);
+        $self->textblock($text, $line_num, $pod_para);
     }
     return  1;
 }
@@ -687,41 +848,56 @@ This method does I<not> usually need to be overridden by subclasses.
 =cut
 
 sub parse_from_filehandle {
-    my ($self, $in_fh, $out_fh) = @_;
+    my $self = shift;
+    my %opts = (ref $_[0] eq 'HASH') ? %{ shift() } : ();
+    my ($in_fh, $out_fh) = @_;
     local $_;
 
     ## Put this stream at the top of the stack and do beginning-of-input
     ## processing. NOTE that $in_fh might be reset during this process.
-    my $input_top = $self->_push_input_stream($in_fh, $out_fh);
+    my $topstream = $self->_push_input_stream($in_fh, $out_fh);
+    (exists $opts{-cutting})  and  $self->cutting( $opts{-cutting} );
 
-    my $textline  = '';
-    my $paragraph = '';
-    while ($textline = $input_top->getline()) {
-        $textline = $self->preprocess_line($textline);
-        next  unless ((defined $textline)  &&  ($textline ne ''));
+    ## Initialize line/paragraph
+    my ($textline, $paragraph) = ('', '');
+    my ($nlines, $plines) = (0, 0);
 
-        if (($paragraph eq '') && ($textline =~ /^==/)) {
+    ## Use <$fh> instead of $fh->getline where possible (for speed)
+    $_ = ref $in_fh;
+    my $tied_fh = (/^(?:GLOB|FileHandle|IO::\w+)$/  or  tied $in_fh);
+
+    ## Read paragraphs line-by-line
+    while (defined ($textline = $tied_fh ? <$in_fh> : $in_fh->getline)) {
+        $textline = $self->preprocess_line($textline, ++$nlines);
+        next  unless ((defined $textline)  &&  (length $textline));
+        $_ = $paragraph;  ## save previous contents
+
+        if ((! length $paragraph) && ($textline =~ /^==/)) {
             ## '==' denotes a one-line command paragraph
             $paragraph = $textline;
+            $plines    = 1;
             $textline  = '';
         } else {
             ## Append this line to the current paragraph
             $paragraph .= $textline;
+            ++$plines;
         }
 
         ## See of this line is blank and ends the current paragraph.
         ## If it isnt, then keep iterating until it is.
-        next unless (($textline =~ /^\s*$/) && ($paragraph ne ''));
+        next unless (($textline =~ /^\s*$/) && (length $paragraph));
 
         ## Now process the paragraph
-        $self->parse_paragraph($paragraph);
+        $self->parse_paragraph($paragraph, $nlines - $plines);
         $paragraph = '';
     }
     ## Dont forget about the last paragraph in the file
-    $self->parse_paragraph($paragraph)  unless ($paragraph eq '');
+    if (length $paragraph) {
+       $self->parse_paragraph($paragraph, $nlines - $plines)
+    }
 
     ## Now pop the input stream off the top of the input stack.
-    $input_top = $self->_pop_input_stream();
+    $self->_pop_input_stream();
 }
 
 ##---------------------------------------------------------------------------
@@ -768,27 +944,30 @@ This method does I<not> usually need to be overridden by subclasses.
 =cut
 
 sub parse_from_file {
-    my ($self, $infile, $outfile) = @_;
+    my $self = shift;
+    my %opts = (ref $_[0] eq 'HASH') ? %{ shift() } : ();
+    my ($infile, $outfile) = @_;
     my ($in_fh,  $out_fh)  = (undef, undef);
     my ($close_input, $close_output) = (0, 0);
+    local *myData = $self;
     local $_;
 
     ## Is $infile a filename or a (possibly implied) filehandle
-    $infile  = '-'  unless ((defined $infile)  && ($infile ne ''));
+    $infile  = '-'  unless ((defined $infile)  && (length $infile));
     if (($infile  eq '-') || ($infile =~ /^<&(STDIN|0)$/i)) {
         ## Not a filename, just a string implying STDIN
-        $self->{_INFILE} = "<standard input>";
+        $myData{_INFILE} = "<standard input>";
         $in_fh = \*STDIN;
     }
     elsif (ref $infile) {
         ## Must be a filehandle-ref (or else assume its a ref to an object
         ## that supports the common IO read operations).
-        $self->{_INFILE} = ${$infile};
+        $myData{_INFILE} = ${$infile};
         $in_fh = $infile;
     }
     else {
         ## We have a filename, open it for reading
-        $self->{_INFILE} = $infile;
+        $myData{_INFILE} = $infile;
         $in_fh = FileHandle->new("< $infile")  or
              croak "Can't open $infile for reading: $!\n";
         $close_input = 1;
@@ -800,31 +979,31 @@ sub parse_from_file {
     ## determine this by seeing the input stream stack has been set-up
     ## already
     ## 
-    unless ((defined $outfile) && ($outfile ne '')) {
-        (defined $self->{_TOP_STREAM}) && ($out_fh  = $self->{_OUTPUT})
+    unless ((defined $outfile) && (length $outfile)) {
+        (defined $myData{_TOP_STREAM}) && ($out_fh  = $myData{_OUTPUT})
                                        || ($outfile = '-');
     }
     ## Is $outfile a filename or a (possibly implied) filehandle
-    if ((defined $outfile) && ($outfile ne '')) {
+    if ((defined $outfile) && (length $outfile)) {
         if (($outfile  eq '-') || ($outfile =~ /^>&?(?:STDOUT|1)$/i)) {
             ## Not a filename, just a string implying STDOUT
-            $self->{_OUTFILE} = "<standard output>";
+            $myData{_OUTFILE} = "<standard output>";
             $out_fh  = \*STDOUT;
         }
         elsif ($outfile =~ /^>&(STDERR|2)$/i) {
             ## Not a filename, just a string implying STDERR
-            $self->{_OUTFILE} = "<standard error>";
+            $myData{_OUTFILE} = "<standard error>";
             $out_fh  = \*STDERR;
         }
         elsif (ref $outfile) {
             ## Must be a filehandle-ref (or else assume its a ref to an
             ## object that supports the common IO write operations).
-            $self->{_OUTFILE} = ${$outfile};;
+            $myData{_OUTFILE} = ${$outfile};;
             $out_fh = $outfile;
         }
         else {
             ## We have a filename, open it for writing
-            $self->{_OUTFILE} = $outfile;
+            $myData{_OUTFILE} = $outfile;
             $out_fh = FileHandle->new("> $outfile")  or
                  croak "Can't open $outfile for writing: $!\n";
             $close_output = 1;
@@ -834,7 +1013,7 @@ sub parse_from_file {
     ## Whew! That was a lot of work to set up reasonably/robust behavior
     ## in the case of a non-filename for reading and writing. Now we just
     ## have to parse the input and close the handles when we're finished.
-    $self->parse_from_filehandle($in_fh, $out_fh);
+    $self->parse_from_filehandle(\%opts, $in_fh, $out_fh);
 
     $close_input  and 
         close($in_fh) || croak "Can't close $infile after reading: $!\n";
@@ -936,22 +1115,6 @@ sub input_handle {
 
 ##---------------------------------------------------------------------------
 
-=head1 B<total_lines()>
-
-            $numlines = $parser->total_lines();
-
-
-The total number of input lines read thus far. This includes I<all> lines,
-regardless of whether or not they were part of the POD documentation.
-
-=cut
-
-sub total_lines {
-   return $_[0]->{_LINES};
-}
-
-##---------------------------------------------------------------------------
-
 =head1 B<input_streams()>
 
             $listref = $parser->input_streams();
@@ -1003,29 +1166,6 @@ sub top_stream {
    return $_[0]->{_TOP_STREAM} || undef;
 }
 
-##---------------------------------------------------------------------------
-
-=head1 B<sequence_commands()>
-
-            $listref = $parser->sequence_commands();
-
-
-Returns a reference to an array that corresponds to the list of interior
-sequence commands that are currently in the middle of being processed.
-The array will have multiple elements I<only> when in the middle of
-processing nested interior sequences.
-
-The current interior sequence command (the one currently being processes)
-should always be at the top of this stack. Each element on this stack
-is a reference to a C<Pod::InteriorSequence> object. Please see
-L<Pod::InputObjects> for more details.
-
-=cut
-
-sub sequence_commands {
-   return $_[0]->{_SEQUENCE_CMDS} || undef;
-}
-
 #############################################################################
 
 =head1 PRIVATE METHODS AND DATA
@@ -1033,7 +1173,7 @@ sub sequence_commands {
 B<Pod::Parser> makes use of several internal methods and data fields
 which clients should not need to see or use. For the sake of avoiding
 name collisions for client data and methods, these methods and fields
-are briefly discussed here. Determned hackers may obtain further
+are briefly discussed here. Determined hackers may obtain further
 information about them by reading the B<Pod::Parser> source code.
 
 Private data fields are stored in the hash-object whose reference is
@@ -1043,90 +1183,6 @@ prefix of "_" and match the regular expression C</^_\w+$/>.
 
 =cut
 
-
-##---------------------------------------------------------------------------
-
-=begin _PRIVATE_
-
-=head1 B<_interpolate_bottom_up()>
-
-            $textblock = $parser->_interpolate_bottom_up($text,$end_re);
-
-
-This method implements the guts of B<interpolate()> and takes the same set
-of arguments. Upon return, the C<$text> parameter I<will have been modified>
-to contain only the un-processed portion of the given string (which will
-I<not> contain any text matched by C<$end_re>). This method should probably
-I<not> be overridden by subclasses.
-
-=end _PRIVATE_
-
-=cut
-
-sub _interpolate_bottom_up {
-    my $self = shift;
-    my($text, $end_re) = @_;
-    ## Set defaults for unspecified arguments
-    $text   = ''   unless (defined $text);
-    $end_re = '$'  unless ((defined $end_re) && ($end_re ne ''));
-    local $_;
-    my $result = '';
-    ## Keep track of a stack of sequences currently "in progress"
-    my $seq_stack = $self->{_SEQUENCE_CMDS};
-    my ($seq_cmd, $seq_arg, $end) = ('', '', undef);
-    my $pod_sequence = undef;
-    ## Parse all sequences until end-of-string or we match the end-regex
-    while (($text ne '')  &&  ($text =~ /^(.*?)(([A-Z])<|($end_re))/)) {
-        ## Append text before the match to the result
-        $result .= $1;
-        ## See if we matched an interior sequence or an end-expression
-        ($seq_cmd, $end) = ($3, $4);
-        ## Only text after the match remains to be processed
-        $text = substr($text, length($1) + length($2));
-        ## Was this the end of the sequence
-        if (! defined $seq_cmd) {
-            last  if ($end_re eq '$');
-            (! defined $end)  and  $end = "";
-            ## If the sequence stack is empty, this cant be the end because
-            ## we havent yet seen a proper beginning. Keep looking.
-            next if ((@{$seq_stack} == 0) && ($result .= $end));
-           
-            ## The following is a *hack* to allow '->' and '=>' inside of
-            ## C<...> sequences (but not '==>' or '-->')
-            if (($end eq '>') && (@{$seq_stack} > 0)) {
-                my $top_cmd = $seq_stack->[-1]->cmd_name();
-                ## Exit the loop if this was the end of the sequence.
-                last unless (($top_cmd eq 'C') && ($result =~ /[^-=][-=]$/));
-                ## This was a "false-end" that was really '->' or '=>'
-                ## so we need to keep looking.
-                $result .= $end  and  next;
-            }
-        }
-        ## At this point we have found an interior sequence,
-        ## we need to obtain its argument
-        $pod_sequence = new Pod::InteriorSequence(
-                          -name => $seq_cmd,
-                    );
-        push(@{$seq_stack}, $pod_sequence);
-        $seq_arg = $pod_sequence->text(
-                         $self->_interpolate_bottom_up($text, '>')
-                   );
-        ## Now process the interior sequence
-        $result .= $self->interior_sequence($seq_cmd, $seq_arg, $pod_sequence);
-        pop(@{$seq_stack});
-    }
-    ## Handle whatever is left if we didnt match the ending regexp
-    unless ((defined $end) && ($end_re ne '$')) {
-        $result .= $text;
-        $result .= "\n"  if (($end_re eq '$') && (chop($text) ne "\n"));
-        $text = '';
-    }
-    ## Modify the input parameter to consume the text that was
-    ## processed so far.
-    $_[0] = $text;
-    ## Return the processed-text
-    return  $result;
-}
 
 ##---------------------------------------------------------------------------
 
@@ -1156,6 +1212,7 @@ and C<OUTPUT> instance data members to determine their new values.
 
 sub _push_input_stream {
     my ($self, $in_fh, $out_fh) = @_;
+    local *myData = $self;
 
     ## Initialize stuff for the entire document if this is *not*
     ## an included file.
@@ -1164,32 +1221,29 @@ sub _push_input_stream {
     ## filehandle. We only want to use a default value if this is the
     ## beginning of the entire document (but *not* if this is an included
     ## file).
-    unless (defined  $self->{_TOP_STREAM}) {
+    unless (defined  $myData{_TOP_STREAM}) {
         $out_fh  = \*STDOUT  unless (defined $out_fh);
-        $self->{_LINES}         = 0;   ## total lines read
-        $self->{_CUTTING}       = 1;   ## current "cutting" state
-        $self->{_SEQUENCE_CMDS} = [];  ## list of nested interior sequences
-        $self->{_INPUT_STREAMS} = [];  ## stack of all input streams
+        $myData{_CUTTING}       = 1;   ## current "cutting" state
+        $myData{_INPUT_STREAMS} = [];  ## stack of all input streams
     }
 
     ## Initialize input indicators
-    $self->{_OUTFILE} = '<unknown>'  unless (defined  $self->{_OUTFILE});
-    $self->{_OUTPUT}  = $out_fh      if (defined  $out_fh);
+    $myData{_OUTFILE} = '(unknown)'  unless (defined  $myData{_OUTFILE});
+    $myData{_OUTPUT}  = $out_fh      if (defined  $out_fh);
     $in_fh            = \*STDIN      unless (defined  $in_fh);
-    $self->{_INFILE}  = '<unknown>'  unless (defined  $self->{_INFILE});
-    $self->{_INPUT}   = $in_fh;
-    my $input_stack   = $self->{_INPUT_STREAMS};
-    my $input_top     = $self->{_TOP_STREAM}
+    $myData{_INFILE}  = '(unknown)'  unless (defined  $myData{_INFILE});
+    $myData{_INPUT}   = $in_fh;
+    my $input_top     = $myData{_TOP_STREAM}
                       = new Pod::InputSource(
-                            -name        => $self->{_INFILE},
+                            -name        => $myData{_INFILE},
                             -handle      => $in_fh,
-                            -lines       => 0,
-                            -was_cutting => $self->{_CUTTING}
+                            -was_cutting => $myData{_CUTTING}
                         );
-    push(@{$input_stack}, $input_top);
+    local *input_stack = $myData{_INPUT_STREAMS};
+    push(@input_stack, $input_top);
 
     ## Perform beginning-of-document and/or beginning-of-input processing
-    $self->begin_pod()  if (@{$input_stack} == 1);
+    $self->begin_pod()  if (@input_stack == 1);
     $self->begin_input();
 
     return  $input_top;
@@ -1217,26 +1271,27 @@ the new top of the input stream stack.
 
 sub _pop_input_stream {
     my ($self) = @_;
-    my $input_stack = $self->{_INPUT_STREAMS};
+    local *myData = $self;
+    local *input_stack = $myData{_INPUT_STREAMS};
 
     ## Perform end-of-input and/or end-of-document processing
-    $self->end_input()  if (@{$input_stack} > 0);
-    $self->end_pod()    if (@{$input_stack} == 1);
+    $self->end_input()  if (@input_stack > 0);
+    $self->end_pod()    if (@input_stack == 1);
 
     ## Restore cutting state to whatever it was before we started
     ## parsing this file.
-    my $old_top = pop(@{$input_stack});
-    $self->{_CUTTING} = $old_top->was_cutting();
+    my $old_top = pop(@input_stack);
+    $myData{_CUTTING} = $old_top->was_cutting();
 
-    ## Dont to reset the input indicators
+    ## Dont forget to reset the input indicators
     my $input_top = undef;
-    if (@{$input_stack} > 0) {
-       $input_top = $self->{_TOP_STREAM} = $input_stack->[-1];
-       $self->{_INFILE}  = $input_top->name();
-       $self->{_INPUT}   = $input_top->handle();
+    if (@input_stack > 0) {
+       $input_top = $myData{_TOP_STREAM} = $input_stack[-1];
+       $myData{_INFILE}  = $input_top->name();
+       $myData{_INPUT}   = $input_top->handle();
     } else {
-       delete $self->{_TOP_STREAM};
-       delete $self->{_INPUT_STREAMS};
+       delete $myData{_TOP_STREAM};
+       delete $myData{_INPUT_STREAMS};
     }
 
     return  $input_top;
@@ -1264,7 +1319,7 @@ causing any namespace clashes due to multiple inheritance.
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 Based on code for B<Pod::Text> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>

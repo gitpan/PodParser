@@ -10,8 +10,8 @@
 
 package Pod::InputObjects;
 
-$VERSION = 1.05;   ## Current version of this package
-require  5.003;    ## requires this Perl version or later
+$VERSION = 1.06;   ## Current version of this package
+require  5.004;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -25,7 +25,7 @@ Pod::InputObjects - objects representing POD input streams, paragraphs, etc.
 
 =head1 REQUIRES
 
-perl5.003, Exporter, Carp
+perl5.004, Exporter, Carp
 
 =head1 EXPORTS
 
@@ -56,6 +56,13 @@ L<perlpod>).
 
 An object corresponding to an interior sequence command from the POD
 input text (see L<perlpod>).
+
+=item B<Pod::ParseTree>
+
+An object corresponding to a tree of parsed POD text. Each "node" in
+a parse-tree (or I<ptree>) is either a text-string or a reference to
+a B<Pod::InteriorSequence> object. The nodes appear in the parse-tree
+in they order in which they were parsed from  left-to-right.
 
 =back
 
@@ -121,35 +128,14 @@ sub new {
     ## hash that is used to represent this object. Note that we default
     ## certain values by specifying them *before* the arguments passed.
     ## If they are in the argument list, they will override the defaults.
-    my $self = { -name => '(UNKNOWN)', -was_cutting => 0, -lines => 0, @_ };
+    my $self = { -name        => '(unknown)',
+                 -handle      => undef,
+                 -was_cutting => 0,
+                 @_ };
 
     ## Bless ourselves into the desired class and perform any initialization
     bless $self, $class;
     return $self;
-}
-
-##---------------------------------------------------------------------------
-
-=item B<getline()>
-
-        my $textline = $pod_input->getline();
-
-This method behaves exactly like the C<getline()> function for
-an C<IO::Handle> or C<FileHandle> object. See L<IO::Handle>
-and L<FileHandle> for more details.
-
-=cut
-
-sub getline {
-   if (wantarray) {
-      my @lines = $_[0]->{'-handle'}->getline();
-      $_[0]->{'-lines'} += scalar(@lines)  if (@lines > 0);
-      return (@lines > 0) ? @lines : undef;
-   } else {
-      my $textline = $_[0]->{'-handle'}->getline();
-      ++$_[0]->{'-lines'}  if (defined $textline);
-      return $textline;
-   }
 }
 
 ##---------------------------------------------------------------------------
@@ -167,9 +153,12 @@ contents of the given argument.
 =cut
 
 sub name {
-   $_[0]->{'-name'} = $_[1]  if (@_ > 1);
+   (@_ > 1)  and  $_[0]->{'-name'} = $_[1];
    return $_[0]->{'-name'};
 }
+
+## allow 'filename' as an alias for 'name'
+*filename = \&name;
 
 ##---------------------------------------------------------------------------
 
@@ -188,21 +177,6 @@ sub handle {
 
 ##---------------------------------------------------------------------------
 
-=item B<num_lines()>
-
-        my $line_number = $pod_input->num_lines();
-
-Returns the number of input lines read from input source object
-(since the time it was contructed).
-
-=cut
-
-sub num_lines {
-   return $_[0]->{'-lines'};
-}
-
-##---------------------------------------------------------------------------
-
 =item B<was_cutting()>
 
         print "Yes.\n" if ($pod_input->was_cutting());
@@ -215,7 +189,7 @@ state is restored to this value.
 =cut
 
 sub was_cutting {
-   $_[0]->{-was_cutting} = $_[1]  if (@_ > 1);
+   (@_ > 1)  and  $_[0]->{-was_cutting} = $_[1];
    return $_[0]->{-was_cutting};
 }
 
@@ -248,8 +222,12 @@ It has the following methods/attributes:
         my $pod_para2 = Pod::Paragraph->new(-name => $cmd,
                                             -text => $text);
         my $pod_para3 = new Pod::Paragraph(-text => $text);
-        my $pod_para2 = new Pod::Paragraph(-name => $cmd,
+        my $pod_para4 = new Pod::Paragraph(-name => $cmd,
                                            -text => $text);
+        my $pod_para5 = Pod::Paragraph->new(-name => $cmd,
+                                            -text => $text,
+                                            -file => $filename,
+                                            -line => $line_number);
 
 This is a class method that constructs a C<Pod::Paragraph> object and
 returns a reference to the new paragraph object. It may be given one or
@@ -257,7 +235,9 @@ two keyword arguments. The C<-text> keyword indicates the corresponding
 text of the POD paragraph. The C<-name> keyword indicates the name of
 the corresponding POD command, such as C<head1> or C<item> (it should
 I<not> contain the C<=> prefix); this is needed only if the POD
-paragraph corresponds to a command paragraph.
+paragraph corresponds to a command paragraph. The C<-file> and C<-line>
+keywords indicate the filename and line number corresponding to the
+beginning of the paragraph 
 
 =cut
 
@@ -271,10 +251,13 @@ sub new {
     ## certain values by specifying them *before* the arguments passed.
     ## If they are in the argument list, they will override the defaults.
     my $self = {
-          -name      => undef,
-          -text      => (@_ == 1) ? $_[0] : undef,
-          -prefix    => '=',
-          -separator => ' ',
+          -name       => undef,
+          -text       => (@_ == 1) ? $_[0] : undef,
+          -file       => '<unknown-file>',
+          -line       => 0,
+          -prefix     => '=',
+          -separator  => ' ',
+          -ptree => [],
           @_
     };
 
@@ -295,9 +278,12 @@ the name of the command (I<without> any leading C<=> prefix).
 =cut
 
 sub cmd_name {
-   $_[0]->{'-name'} = $_[1]  if (@_ > 1);
+   (@_ > 1)  and  $_[0]->{'-name'} = $_[1];
    return $_[0]->{'-name'};
 }
+
+## let name() be an alias for cmd_name()
+*name = \&cmd_name;
 
 ##---------------------------------------------------------------------------
 
@@ -310,9 +296,9 @@ This method will return the corresponding text of the paragraph.
 =cut
 
 sub text {
-   $_[0]->{'-text'} = $_[1]  if (@_ > 1);
+   (@_ > 1)  and  $_[0]->{'-text'} = $_[1];
    return $_[0]->{'-text'};
-}
+}       
 
 ##---------------------------------------------------------------------------
 
@@ -364,6 +350,47 @@ sub cmd_separator {
 
 ##---------------------------------------------------------------------------
 
+=item B<parse_tree()>
+
+        my $ptree = $pod_parser->parse_text( $pod_para->text() );
+        $pod_para->parse_tree( $ptree );
+        $ptree = $pod_para->parse_tree();
+
+This method will get/set the corresponding parse-tree of the paragraph's text.
+
+=cut
+
+sub parse_tree {
+   (@_ > 1)  and  $_[0]->{'-ptree'} = $_[1];
+   return $_[0]->{'-ptree'};
+}       
+
+## let ptree() be an alias for parse_tree()
+*ptree = \&parse_tree;
+
+##---------------------------------------------------------------------------
+
+=item B<file_line()>
+
+        my ($filename, $line_number) = $pod_para->file_line();
+        my $position = $pod_para->file_line();
+
+Returns the current filename and line number for the paragraph
+object.  If called in an array context, it returns a list of two
+elements: first the filename, then the line number. If called in
+a scalar context, it returns a string containing the filename, followed
+by a colon (':'), followed by the line number.
+
+=cut
+
+sub file_line {
+   my @loc = ($_[0]->{'-file'} || '<unknown-file>',
+              $_[0]->{'-line'} || 0);
+   return (wantarray) ? @loc : join(':', @loc);
+}
+
+##---------------------------------------------------------------------------
+
 =back
 
 =cut
@@ -387,17 +414,23 @@ It has the following methods/attributes:
 
 =item B<new()>
 
-        my $pod_seq1 = Pod::InteriorSequence->new(-name => $cmd,
-                                                  -text => $text);
+        my $pod_seq1 = Pod::InteriorSequence->new(-name => $cmd
+                                                  -ldelim => $delimiter);
         my $pod_seq2 = new Pod::InteriorSequence(-name => $cmd,
-                                                 -text => $text);
+                                                 -ldelim => $delimiter);
+        my $pod_seq3 = new Pod::InteriorSequence(-name => $cmd,
+                                                 -ldelim => $delimiter,
+                                                 -file => $filename,
+                                                 -line => $line_number);
 
 This is a class method that constructs a C<Pod::InteriorSequence> object
 and returns a reference to the new interior sequence object. It should
-be given two keyword arguments.  The C<-text> keyword indicates the
-corresponding text of the POD paragraph, The C<-name> keyword indicates
-the name of the corresponding interior sequence command, such as C<I> or
-C<B> or C<C>.
+be given two keyword arguments.  The C<-ldelim> keyword indicates the
+corresponding left-delimiter of the interior sequence (e.g. 'E<lt>').
+The C<-name> keyword indicates the name of the corresponding interior
+sequence command, such as C<I> or C<B> or C<C>. The C<-file> and
+C<-line> keywords indicate the filename and line number corresponding
+to the beginning of the interior sequence.
 
 =cut
 
@@ -411,10 +444,12 @@ sub new {
     ## certain values by specifying them *before* the arguments passed.
     ## If they are in the argument list, they will override the defaults.
     my $self = {
-          -name      => (@_ == 2) ? $_[0] : undef,
-          -text      => (@_ == 2) ? $_[1] : undef,
-          -ldelim    => '<',
-          -rdelim    => '>',
+          -name       => (@_ == 1) ? $_[0] : undef,
+          -file       => '<unknown-file>',
+          -line       => 0,
+          -ldelim     => '<',
+          -rdelim     => '>',
+          -ptree => new Pod::ParseTree(),
           @_
     };
 
@@ -434,47 +469,93 @@ The name of the interior sequence command.
 =cut
 
 sub cmd_name {
-   $_[0]->{'-name'} = $_[1]  if (@_ > 1);
+   (@_ > 1)  and  $_[0]->{'-name'} = $_[1];
    return $_[0]->{'-name'};
+}
+
+## let name() be an alias for cmd_name()
+*name = \&cmd_name;
+
+##---------------------------------------------------------------------------
+
+## Private subroutine to set the parent pointer of all the given
+## children that are interior-sequences to be $self
+
+sub _set_child2parent_links {
+   my ($self, @children) = @_;
+   ## Make sure any sequences know who their parent is
+   for (@children) {
+      next unless ref $_;
+      if ($_->isa('Pod::InteriorSequence') or $_->can('nested')) {
+          $_->{'-parent_sequence'} = $self;
+      }
+   }
+}
+
+## Private subroutine to unset child->parent links
+
+sub _unset_child2parent_links {
+   my $self = shift;
+   $self->{'-parent_sequence'} = undef;
+   my $ptree = $self->{'-ptree'};
+   for (@$ptree) {
+      next  unless ($_ and ref $_);
+      $_->_unset_child2parent_links();
+   }
 }
 
 ##---------------------------------------------------------------------------
 
-=item B<text()>
+=item B<prepend()>
 
-        my $seq_text = $pod_seq->text();
+        $pod_seq->prepend($text);
+        $pod_seq1->prepend($pod_seq2);
 
-The text of the interior sequence (this is what the command will modify
-or massage in some manner).
+Prepends the given string or parse-tree or sequence object to the parse-tree
+of this interior sequence.
 
 =cut
 
-sub text {
-   $_[0]->{'-text'} = $_[1]  if (@_ > 1);
-   return $_[0]->{'-text'};
+sub prepend {
+   my $self  = shift;
+   $self->{'-ptree'}->prepend(@_);
+   _set_child2parent_links($self, @_);
+   return $self;
 }       
 
-=item B<list()>
+##---------------------------------------------------------------------------
 
-        my $seq_ref  = $pod_seq->list();
-      or
-        my @seq_list = $pod_seq->list();
+=item B<append()>
 
-The list of things in the interior sequence (this is what the command will modify
-or massage in some manner).
+        $pod_seq->append($text);
+        $pod_seq1->append($pod_seq2);
+
+Appends the given string or parse-tree or sequence object to the parse-tree
+of this interior sequence.
 
 =cut
 
-sub list
-{
- my $o = shift;
- if (@_)
-  {
-   $o->{'-list'} = [@_];
-  }
- return (wantarray) ? (@{$o->{'-list'}}) : $o->{'-list'};
-}
+sub append {
+   my $self = shift;
+   $self->{'-ptree'}->append(@_);
+   _set_child2parent_links($self, @_);
+   return $self;
+}       
 
+##---------------------------------------------------------------------------
+
+=item B<nested()>
+
+        $outer_seq = $pod_seq->nested || print "not nested";
+
+If this interior sequence is nested inside of another interior
+sequence, then the outer/parent sequence that contains it is
+returned. Otherwise C<undef> is returned.
+
+sub nested {
+   my $self = shift;
+   return  $self->{'-parent_sequence'} || undef;
+}
 
 ##---------------------------------------------------------------------------
 
@@ -488,8 +569,13 @@ exactly as it appeared in the input.
 =cut
 
 sub raw_text {
-   return $_[0]->{'-name'} . $_[0]->{'-ldelim'} .
-          $_[0]->{'-text'} . $_[0]->{'-rdelim'} ;
+   my $self = shift;
+   my $text = $self->{'-name'} . $self->{'-ldelim'};
+   for ( $self->{'-ptree'}->children ) {
+      $text .= (ref $_) ? $_->raw_text : $_;
+   }
+   $text .= $self->{'-rdelim'};
+   return $text;
 }
 
 ##---------------------------------------------------------------------------
@@ -504,8 +590,12 @@ sequence (should be "<").
 =cut
 
 sub left_delimiter {
+   (@_ > 1)  and  $_[0]->{'-ldelim'} = $_[1];
    return $_[0]->{'-ldelim'};
 }
+
+## let ldelim() be an alias for left_delimiter()
+*ldelim = \&left_delimiter;
 
 ##---------------------------------------------------------------------------
 
@@ -517,7 +607,71 @@ sequence (should be ">").
 =cut
 
 sub right_delimiter {
+   (@_ > 1)  and  $_[0]->{'-rdelim'} = $_[1];
    return $_[0]->{'-rdelim'};
+}
+
+## let rdelim() be an alias for right_delimiter()
+*rdelim = \&right_delimiter;
+
+##---------------------------------------------------------------------------
+
+=item B<parse_tree()>
+
+        my $ptree = $pod_parser->parse_text($paragraph_text);
+        $pod_seq->parse_tree( $ptree );
+        $ptree = $pod_seq->parse_tree();
+
+This method will get/set the corresponding parse-tree of the interior
+sequence's text.
+
+=cut
+
+sub parse_tree {
+   (@_ > 1)  and  $_[0]->{'-ptree'} = $_[1];
+   return $_[0]->{'-ptree'};
+}       
+
+## let ptree() be an alias for parse_tree()
+*ptree = \&parse_tree;
+
+##---------------------------------------------------------------------------
+
+=item B<file_line()>
+
+        my ($filename, $line_number) = $pod_seq->file_line();
+        my $position = $pod_seq->file_line();
+
+Returns the current filename and line number for the interior sequence
+object.  If called in an array context, it returns a list of two
+elements: first the filename, then the line number. If called in
+a scalar context, it returns a string containing the filename, followed
+by a colon (':'), followed by the line number.
+
+=cut
+
+sub file_line {
+   my @loc = ($_[0]->{'-file'}  || '<unknown-file>',
+              $_[0]->{'-line'}  || 0);
+   return (wantarray) ? @loc : join(':', @loc);
+}
+
+##---------------------------------------------------------------------------
+
+=item B<DESTROY()>
+
+This method performs any necessary cleanup for the interior-sequence.
+If you override this method then it is B<imperative> that you invoke
+the parent method from within your own method, otherwise
+I<interior-sequence storage will not be reclaimed upon destruction!>
+
+=cut
+
+sub DESTROY {
+   ## We need to get rid of all child->parent pointers throughout the
+   ## tree so their reference counts will go to zero and they can be
+   ## garbage-collected
+   _unset_child2parent_links(@_);
 }
 
 ##---------------------------------------------------------------------------
@@ -528,13 +682,195 @@ sub right_delimiter {
 
 #############################################################################
 
+package Pod::ParseTree;
+
+##---------------------------------------------------------------------------
+
+=head1 B<Pod::ParseTree>
+
+This object corresponds to a tree of parsed POD text. As POD text is
+scanned from left to right, it is parsed into an ordered list of
+text-strings and B<Pod::InteriorSequence> objects (in order of
+appearance). A B<Pod::ParseTree> object corresponds to this list of
+strings and sequences. Each interior sequence in the parse-tree may
+itself contain a parse-tree (since interior sequences may be nested).
+
+=over 4
+
+=cut
+
+##---------------------------------------------------------------------------
+
+=item B<new()>
+
+        my $ptree1 = Pod::ParseTree->new;
+        my $ptree2 = new Pod::ParseTree;
+        my $ptree4 = Pod::ParseTree->new($array_ref);
+        my $ptree3 = new Pod::ParseTree($array_ref);
+
+This is a class method that constructs a C<Pod::Parse_tree> object and
+returns a reference to the new parse-tree. If a single-argument is given,
+it mist be a reference to an array, and is used to initialize the root
+(top) of the parse tree.
+
+=cut
+
+sub new {
+    ## Determine if we were called via an object-ref or a classname
+    my $this = shift;
+    my $class = ref($this) || $this;
+
+    my $self = (@_ == 1  and  ref $_[0]) ? $_[0] : [];
+
+    ## Bless ourselves into the desired class and perform any initialization
+    bless $self, $class;
+    return $self;
+}
+
+##---------------------------------------------------------------------------
+
+=item B<top()>
+
+        my $top_node = $ptree->top();
+        $ptree->top( $top_node );
+        $ptree->top( @children );
+
+This method gets/sets the top node of the parse-tree. If no arguments are
+given, it returns the topmost node in the tree (the root), which is also
+a B<Pod::ParseTree>. If it is given a single argument that is a reference,
+then the reference is assumed to a parse-tree and becomes the new top node.
+Otherwise, if arguments are given, they are treated as the new list of
+children for the top node.
+
+=cut
+
+sub top {
+   my $self = shift;
+   if (@_ > 0) {
+      @{ $self } = (@_ == 1  and  ref $_[0]) ? ${ @_ } : @_;
+   }
+   return $self;
+}
+
+## let parse_tree() & ptree() be aliases for the 'top' method
+*parse_tree = *ptree = \&top;
+
+##---------------------------------------------------------------------------
+
+=item B<children()>
+
+This method gets/sets the children of the top node in the parse-tree.
+If no arguments are given, it returns the list (array) of children
+(each of which should be either a string or a B<Pod::InteriorSequence>.
+Otherwise, if arguments are given, they are treated as the new list of
+children for the top node.
+
+=cut
+
+sub children {
+   my $self = shift;
+   if (@_ > 0) {
+      @{ $self } = (@_ == 1  and  ref $_[0]) ? ${ @_ } : @_;
+   }
+   return @{ $self };
+}
+
+##---------------------------------------------------------------------------
+
+=item B<prepend()>
+
+This method prepends the given text or parse-tree to the current parse-tree.
+If the first item on the parse-tree is text and the argument is also text,
+then the text is prepended to the first item (not added as a separate string).
+Otherwise the argument is added as a new string or parse-tree I<before>
+the current one.
+
+=cut
+
+use vars qw(@ptree);  ## an alias used for performance reasons
+
+sub prepend {
+   my $self = shift;
+   local *ptree = $self;
+   for (@_) {
+      next  unless $_;
+      if (@ptree  and  !(ref $ptree[0])  and  !(ref $_)) {
+         $ptree[0] = $_ . $ptree[0];
+      }
+      else {
+         unshift @ptree, $_;
+      }
+   }
+}
+
+##---------------------------------------------------------------------------
+
+=item B<append()>
+
+This method appends the given text or parse-tree to the current parse-tree.
+If the last item on the parse-tree is text and the argument is also text,
+then the text is appended to the last item (not added as a separate string).
+Otherwise the argument is added as a new string or parse-tree I<after>
+the current one.
+
+=cut
+
+sub append {
+   my $self = shift;
+   local *ptree = $self;
+   for (@_) {
+      next  unless $_;
+      if (@ptree  and  !(ref $ptree[-1])  and  !(ref $_)) {
+         $ptree[-1] .= $_;
+      }
+      else {
+         push @ptree, $_;
+      }
+   }
+}
+
+##---------------------------------------------------------------------------
+
+## Private routines to set/unset child->parent links
+
+sub _unset_child2parent_links {
+   my $self = shift;
+   local *ptree = $self;
+   for (@_) {
+      next  unless ($_ and ref $_);
+      $_->_unset_child2parent_links();
+   }
+}
+
+sub _set_child2parent_links {
+    ## nothing to do, Pod::ParseTrees cant have parent pointers
+}
+
+=item B<DESTROY()>
+
+This method performs any necessary cleanup for the parse-tree.
+If you override this method then it is B<imperative>
+that you invoke the parent method from within your own method,
+otherwise I<parse-tree storage will not be reclaimed upon destruction!>
+
+=cut
+
+sub DESTROY {
+   ## We need to get rid of all child->parent pointers throughout the
+   ## tree so their reference counts will go to zero and they can be
+   ## garbage-collected
+   _unset_child2parent_links(@_);
+}
+
+#############################################################################
+
 =head1 SEE ALSO
 
 See L<Pod::Parser>, L<Pod::Select>, and L<Pod::Callbacks>.
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 =cut
 

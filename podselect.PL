@@ -108,8 +108,7 @@ Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
 =cut
 
 use Pod::Select;
-#use Pod::Usage;
-sub pod2usage { exit(2); }
+use Pod::Usage;
 use Getopt::Long;
 
 ## Define options

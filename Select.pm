@@ -12,8 +12,8 @@
 
 package Pod::Select;
 
-$VERSION = 1.05;   ## Current version of this package
-require  5.003;    ## requires this Perl version or later
+$VERSION = 1.06;   ## Current version of this package
+require  5.004;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -64,7 +64,7 @@ or
 
 =head1 REQUIRES
 
-perl5.003, Pod::Parser, Exporter, FileHandle, Carp
+perl5.004, Pod::Parser, Exporter, FileHandle, Carp
 
 =head1 EXPORTS
 
@@ -148,7 +148,7 @@ C</!.+>
 
 #############################################################################
 
-use vars qw(@ISA @EXPORT $VERSION);
+use vars qw(@ISA @EXPORT $VERSION $MAX_HEADING_LEVEL);
 use strict;
 #use diagnostics;
 use Carp;
@@ -156,11 +156,6 @@ use Pod::Parser 1.04;
 
 @ISA = qw(Pod::Parser);
 @EXPORT = qw(&podselect);
-
-use vars qw($VERSION $MAX_HEADING_LEVEL);
-use strict;
-#use diagnostics;
-use Carp;
 
 ## Maximum number of heading levels supported for '=headN' directives
 *MAX_HEADING_LEVEL = \3;
@@ -186,14 +181,17 @@ reference to the object itself as an implicit first parameter.
 ## 
 ## =end _PRIVATE_
 
+use vars qw(%myData @section_headings);
+
 sub _init_headings {
     my $self = shift;
+    local *myData = $self;
 
     ## Initialize current section heading titles if necessary
-    unless (defined $self->{_SECTION_HEADINGS}) {
-        $self->{_SECTION_HEADINGS} = [];
+    unless (defined $myData{_SECTION_HEADINGS}) {
+        local *section_headings = $myData{_SECTION_HEADINGS} = [];
         for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
-            $self->{_SECTION_HEADINGS}->[$i] = '';
+            $section_headings[$i] = '';
         }
     }
 }
@@ -250,9 +248,12 @@ This method should I<not> normally be overridden by subclasses.
 
 =cut
 
+use vars qw(@selected_sections);
+
 sub select {
     my $self = shift;
     my @sections = @_;
+    local *myData = $self;
     local $_;
 
     ##---------------------------------------------------------------------
@@ -270,18 +271,19 @@ sub select {
 
     ## Reset the set of sections to use
     unless (@sections > 0) {
-        delete $self->{_SELECTED_SECTIONS}  unless ($add);
+        delete $myData{_SELECTED_SECTIONS}  unless ($add);
         return;
     }
-    $self->{_SELECTED_SECTIONS} = []
-        unless ($add  &&  exists $self->{_SELECTED_SECTIONS});
+    $myData{_SELECTED_SECTIONS} = []
+        unless ($add  &&  exists $myData{_SELECTED_SECTIONS});
+    local *selected_sections = $myData{_SELECTED_SECTIONS};
 
     ## Compile each spec
     my $spec;
     for $spec (@sections) {
         if ( defined($_ = &_compile_section_spec($spec)) ) {
             ## Store them in our sections array
-            push(@{$self->{_SELECTED_SECTIONS}}, $_);
+            push(@selected_sections, $_);
         }
         else {
             carp "Ignoring section spec \"$spec\"!\n";
@@ -355,10 +357,11 @@ This method should I<not> normally be overridden by subclasses.
 sub match_section {
     my $self = shift;
     my (@headings) = @_;
+    local *myData = $self;
 
     ## Return true if no restrictions were explicitly specified
-    my $selections = (exists $self->{_SELECTED_SECTIONS})
-                       ?  $self->{_SELECTED_SECTIONS}  :  undef;
+    my $selections = (exists $myData{_SELECTED_SECTIONS})
+                       ?  $myData{_SELECTED_SECTIONS}  :  undef;
     return  1  unless ((defined $selections) && (@{$selections} > 0));
 
     ## Default any unspecified sections to the current one
@@ -412,20 +415,21 @@ for processing; otherwise a false value is returned.
 sub is_selected {
     my ($self, $paragraph) = @_;
     local $_;
+    local *myData = $self;
 
-    $self->_init_headings()  unless (defined $self->{_SECTION_HEADINGS});
+    $self->_init_headings()  unless (defined $myData{_SECTION_HEADINGS});
 
     ## Keep track of current sections levels and headings
     $_ = $paragraph;
     if (/^=((?:sub)*)(?:head(?:ing)?|sec(?:tion)?)(\d*)\s+(.*)\s*$/) {
         ## This is a section heading command
         my ($level, $heading) = ($2, $3);
-        $level = 1 + (length($1) / 3)  if (($level eq '') || ($1 ne ''));
+        $level = 1 + (length($1) / 3)  if ((! length $level) || (length $1));
         ## Reset the current section heading at this level
-        $self->{_SECTION_HEADINGS}->[$level - 1] = $heading;
+        $myData{_SECTION_HEADINGS}->[$level - 1] = $heading;
         ## Reset subsection headings of this one to empty
         for (my $i = $level; $i < $MAX_HEADING_LEVEL; ++$i) {
-            $self->{_SECTION_HEADINGS}->[$i] = '';
+            $myData{_SECTION_HEADINGS}->[$i] = '';
         }
     }
 
@@ -571,7 +575,8 @@ sub _compile_section_spec {
 
     ## Set default regex for ommitted levels
     for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
-        $regexs[$i]  = '.*'  if ((! defined $regexs[$i]) || $regexs[$i] eq "");
+        $regexs[$i]  = '.*'  unless ((defined $regexs[$i])
+                                     && (length $regexs[$i]));
     }
     ## Modify the regexs as needed and validate their syntax
     my $bad_regexs = 0;
@@ -632,7 +637,7 @@ L<Pod::Parser>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>bradapp@enteract.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 Based on code for B<pod2text> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>

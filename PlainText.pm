@@ -12,8 +12,8 @@
 
 package Pod::PlainText;
 
-$VERSION = 1.05;   ## Current version of this package
-require  5.003;    ## requires this Perl version or later
+$VERSION = 1.06;   ## Current version of this package
+require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
 
@@ -47,7 +47,7 @@ or
 
 =head1 REQUIRES
 
-perl5.003, Pod::Select, Term::Cap, Exporter, Carp
+perl5.004, Pod::Select, Term::Cap, Exporter, Carp
 
 =head1 EXPORTS
 
@@ -79,7 +79,7 @@ L<Pod::Parser>.
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
 
 Modified to derive from B<Pod::Parser> by
-Brad Appleton E<lt>bradapp@enteract.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 =cut
 
@@ -282,7 +282,7 @@ sub item {
     my $self = shift;
     my $cmd  = shift;
     local $_ = shift;
-    my $attrs  = shift;
+    my $line  = shift;
     $cmd  = ''  unless (defined $cmd);
     $_    = ''  unless (defined $_);
     my $out_fh  = $self->output_handle();
@@ -295,17 +295,19 @@ sub item {
 
     my $over = $self->{INDENT};
     $over   -= $prev_indent  if ($prev_indent < $over);
-    if ($cmd ne '') {  # tricked - this is another command
+    if (length $cmd) {  # tricked - this is another command
         $self->output($paratag, INDENT => $prev_indent);
-        $self->command($cmd, $_, $attrs);
+        $self->command($cmd, $_);
     }
     elsif (/^\s+/o) {  # verbatim
         $self->output($paratag, INDENT => $prev_indent);
+        s/\s+\Z//;
         $self->verbatim($_);
     }
     else {  # plain textblock
-        $_ = $self->interpolate($_);
-        if (($_ ne '') && (length($paratag) <= $over)) {
+        $_ = $self->interpolate($_, $line);
+        s/\s+\Z//;
+        if ((length $_) && (length($paratag) <= $over)) {
             $self->IP_output($paratag, $_);
         }
         else {
@@ -366,7 +368,7 @@ sub output {
     my $self = shift;
     local $_ = shift;
     $_    = ''  unless (defined $_);
-    return  if ($_ eq '');
+    return  unless (length $_);
     my $out_fh = $self->output_handle();
     my %options;
     if (@_ > 1) {
@@ -466,7 +468,7 @@ sub begin_pod {
 
 sub end_pod {
     my $self = shift;
-    $self->item('', '', '')  if (defined $self->{ITEM});
+    $self->item('', '', '', 0)  if (defined $self->{ITEM});
 }
 
 sub begun_excluded {
@@ -479,14 +481,15 @@ sub command {
     my $self = shift;
     my $cmd  = shift;
     local $_ = shift;
+    my $line = shift;
     $cmd  = ''  unless (defined $cmd);
     $_    = ''  unless (defined $_);
     my $out_fh  = $self->output_handle();
 
     return  if (($cmd ne 'end') and $self->begun_excluded());
-    return  $self->item($cmd, $_)  if (defined $self->{ITEM});
-    $_ = $self->interpolate($_);
-    s/\s*$/\n/;
+    return  $self->item($cmd, $_, $line)  if (defined $self->{ITEM});
+    $_ = $self->interpolate($_, $line);
+    s/\s+\Z/\n/;
 
     return  if ($cmd eq 'pod');
     if ($cmd eq 'head1') {
@@ -539,8 +542,9 @@ sub command {
 sub verbatim {
     my $self = shift;
     local $_ = shift;
+    my $line = shift;
     return  if $self->begun_excluded();
-    return  $self->item('', $_)  if (defined $self->{ITEM});
+    return  $self->item('', $_, $line)  if (defined $self->{ITEM});
     $self->{NEEDSPACE} = 1;
     $self->output($_);
 }
@@ -548,9 +552,10 @@ sub verbatim {
 sub textblock {
     my $self  = shift;
     my $text  = shift;
+    my $line  = shift;
     return  if $self->begun_excluded();
-    return  $self->item('', $text)  if (defined $self->{ITEM});
-    local($_) = $self->interpolate($text);
+    return  $self->item('', $text, $line)  if (defined $self->{ITEM});
+    local($_) = $self->interpolate($text, $line);
     s/\s*$/\n/;
     $self->makespace();
     $self->output($_, REFORMAT => 1);
@@ -599,17 +604,17 @@ sub interior_sequence {
         elsif (m|\s*/\s*|s) {
             ($manpage, $sec) = split(/\s*\/\s*/, $_, 2);
         }
-        if ($sec eq '') {
-            $ref .= "the $manpage manpage"  if ($manpage ne '');
+        if (! length $sec) {
+            $ref .= "the $manpage manpage"  if (length $manpage);
         }
         elsif ($sec =~ /^\s*"\s*(.*)\s*"\s*$/o) {
             $ref .= "the section on \"$1\"";
-            $ref .= " in the $manpage manpage"  if ($manpage ne '');
+            $ref .= " in the $manpage manpage"  if (length $manpage);
         }
         else {
              $ref .= "the \"$sec\" entry";
-             $ref .= ($manpage eq '') ? " in this manpage"
-                                      : " in the $manpage manpage";
+             $ref .= (length $manpage) ? " in the $manpage manpage"
+                                       : " in this manpage"
         }
         $_ = $ref;
         #if ( m{^ ([a-zA-Z][^\s\/]+) (\([^\)]+\))? $}x ) {
