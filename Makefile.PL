@@ -51,7 +51,7 @@ push @testdirs, $test2dir if (-d $test2dir);
 WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
-    VERSION      => '1.23',
+    VERSION      => '1.24',
     INSTALLDIRS  => ($] >= 5.008 ? 'perl' : 'site'),
     PL_FILES     => { map { (script("$_.PL") => script($_)) } @SCRIPTS },
     EXE_FILES    => [ @EXE_FILES ],

@@ -100,7 +100,7 @@ if ($^O eq 'VMS') { # privlib is perl_root:[lib] unfortunately
 }
 else {
     $compare = File::Spec->catfile($Config::Config{privlib},
-      ($^O =~ /macos|darwin/i ? 'pods' : 'pod'),"perlfunc.pod");
+      ($^O =~ /macos|darwin|cygwin/i ? 'pods' : 'pod'),"perlfunc.pod");
     ok(_canon($result),_canon($compare));
 }
 

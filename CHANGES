@@ -1,3 +1,19 @@
+ 26-Aug-2003           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.24
+ + removed the "BETA STAGE" from Pod::Checker - it is now stable
+ + added patch by Micheal Schwern schwernATpobox.com to silence Pod::Checker
+   (the module) and let podchecker (the script) print the diagnostics. Added
+   note in the Pod::Checker documentation.
+ + Tom Wyant twyant4ATcomcast.net reported that Cygwin also has the
+   core pods in pods/ - fixed in Pod::Find
+ + changed the logic in Pod::InputObjects a bit to speed up the parser,
+   based on a suggestion by Mark Jason Dominus mjdATplover.com. The
+   original proposal was however too much of a revolution to the existing
+   behaviour.
+ + Some minor performance improvements in Pod::Parser (profile analysis)
+
+
  12-Jun-2003           Marek Rouchal                        <marekr@cpan.org>
  -----------------------------------------------------------------------------
  Version 1.23
