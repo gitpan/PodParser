@@ -1,3 +1,17 @@
+ 22-Oct-1999           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.090
+ + Added several additional checks to Pod::Checker
+ + Pod::Checker detects files with no POD
+ + Pod::Checker prints warnings about inproper style
+ + Modified podchecker to use the -warnings option and the "empty POD"
+   status
+ + Added Pod::Hyperlink (internal in Pod::Checker for now) that parses
+   the L<> sequence into alttext, page and section
+ + Updated documentation
+ + Started adding callbacks so that Pod::Checker can be used also for
+   single-pass POD translators in the future
+
  25-Sep-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.085

@@ -43,7 +43,7 @@ SYNOPSIS
         $parser->parse_from_filehandle(\*STDIN, \*STDERR);
 
 REQUIRES
-    perl5.004, Pod::Parser, Exporter, FileHandle, Carp
+    perl5.004, Pod::Parser, Exporter, Carp
 
 EXPORTS
     podselect()

@@ -52,7 +52,7 @@ SYNOPSIS
         for (@ARGV) { $parser->parse_from_file($_); }
 
 REQUIRES
-    perl5.004, Pod::InputObjects, Exporter, FileHandle, Carp
+    perl5.004, Pod::InputObjects, FileHandle, Exporter, Carp
 
 EXPORTS
     Nothing.
@@ -569,7 +569,7 @@ errorsub()
                 my $errorsub = $parser->errorsub()
                 my $errmsg = "This is an error message!\n"
                 (ref $errorsub) and &{$errorsub}($errmsg)
-                    or (defined $errmsg) and $parser->$errorsub($errmsg)
+                    or (defined $errorsub) and $parser->$errorsub($errmsg)
                         or  warn($errmsg);
 
     Returns a method name, or else a reference to the user-supplied
