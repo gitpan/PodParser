@@ -69,5 +69,3 @@ Wolfgang Laun:
 
    => is this legal POD at all? Currently a warning is printed
 
- * A =head2 without preceding =head1 might deserve a warning.
-

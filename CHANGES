@@ -1,3 +1,28 @@
+ 31-Oct-2002           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.20
+ + Merged changes of perl-5.8.0 core back into this distribution:
+   - MacOS specific changes
+   - english orthography corrections
+   - adaptations to perlpodspec (e.g. =over does not require argument)
+ + Adapt the link text to perlpodspec (drop extra text like
+   `elsewhere in this document', `the ... manpage' etc.)
+ + Allow dashes in Pod hyperlinks, e.g. L<Inline::C-Cookbook>
+   (on request by Slaven Rezic and Mark Overmeer)
+
+
+ 29-Aug-2002           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.19
+ + Changed t/pod/testp2pt.pl to always choose Pod::PlainText for the tests,
+   do not rely on Pod::Text, which is not included in this package
+   (as suggested by Richard Clamp <richardc@unixbeard.net>)
+ + Fixed spurious warning in Pod::ParseUtils reported by Rafael Garcia-Suarez 
+   <rgarciasuarez@free.fr>: Inside "" the characters | and / are ok
+ + Added a num_warnings method to Pod::Checker - requested by
+   brian d foy <comdog@panix.com>
+ + Added a warning if =head2 comes before a =head1 - one TODO item less!
+
  01-Sep-2000           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.18
