@@ -1,4 +1,10 @@
 
+ 28-Apr-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.082
+ + Fixed portability problems with Makefile.PL on MSWin32 systems
+   (thanks to Jan Dubois for showing how to do this!)
+
  08-Apr-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.081

@@ -4,9 +4,13 @@
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
 
-require 5.004;
+BEGIN {
+    require 5.004;
+    eval { require File::Spec };
+    $@  and  die "You need to install the File::Spec module first!\n";
+}
+
 use ExtUtils::MakeMaker;
-use File::Spec;
 
 $DISTNAME  = "PodParser";    ## The "product" name for this distribution
 $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
@@ -31,20 +35,9 @@ $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
 my $testdir  = File::Spec->catfile('t', 'pod');
 my $test2dir = File::Spec->catfile($testdir, 'xtra');
 my @testdirs = ($testdir);
-push @testdirs, $test2dir if (-d $testdir);
+push @testdirs, $test2dir if (-d $test2dir);
 @TESTPODS = map { File::Spec->catfile($_, '*.t') } @testdirs;
-
-## If WriteMakefile had a TEST_FILES attribute we could just use that,
-## but since it doesnt we have to resort to this below to override
-## using t/*.t as the suite of test-scripts!
-sub MY::test {
-    package MY; # so that "SUPER" works right
-    my $inherited  = shift->SUPER::test(@_);
-    my $test_files = "@main::TESTPODS";
-    $inherited =~ s/^(\s*TEST_FILES\s*=\s*)(.*)$/$1$test_files/m;
-    $inherited;
-}
-
+@TESTPODS = map { glob } @TESTPODS if $^O eq 'MSWin32';
 
 ##-----------------------------------------------------------------------
 ## Instructions to write the Makefile (see Ext::MakeMaker)
@@ -54,6 +47,7 @@ WriteMakefile(
     DISTNAME     => $DISTNAME,
     VERSION_FROM => 'lib/Pod/Parser.pm',  ## Finds distribution $VERSION
     realclean    => { FILES => "@SCRIPTS" },
+    test         => { TESTS => "@TESTPODS" },
     ($] < 5.005 ?     ## Need File::Spec if this is 5.004 or earlier
        (PREREQ_PM  => {'File::Spec' => 0}) : ()),
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
