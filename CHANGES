@@ -1,5 +1,11 @@
  08-May-2004           Marek Rouchal                        <marekr@cpan.org>
  -----------------------------------------------------------------------------
+ Version 1.28
+ + bumped version of ParseUtils to make CPAN indexer happy
+
+
+ 08-May-2004           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
  Version 1.27
  + reviewed a bunch of rather old emails and verified that all that is in
  + added patch by Michael G Schwern schwernATpobox.com to suppress spurious
