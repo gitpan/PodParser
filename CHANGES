@@ -1,4 +1,19 @@
 
+ 08-Apr-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.081
+ + Fixed warning message in Pod::Parser::parse_text when $expand_seq is undef.
+ + Fixed another problem with ignoring the contents of an interior sequence
+   if it was nothing but ')' inside the angle brackets (e.g. C<0>).
+ + Moved test files under t/ to t/pod, and added a subdirectory t/pod/xtra
+   for the extra tests that involve "included" files and processing its
+   own source (the "xtra" files are *not* part of what comes with the CORE
+   in Perl 5.006)
+ + Munged the Makefile.PL to be able to set TEST_FILES to t/pod/*.t and
+   t/pod/xtra/*.t (if it exists). This requires File::Spec so now you
+   need either File::Spec or Perl 5.005 or later to install this.
+
+
  01-Mar-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.08

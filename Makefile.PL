@@ -6,6 +6,7 @@
 
 require 5.004;
 use ExtUtils::MakeMaker;
+use File::Spec;
 
 $DISTNAME  = "PodParser";    ## The "product" name for this distribution
 $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
@@ -24,6 +25,27 @@ $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
                  pod2usage
                );
 
+## The test-script to execute regression tests (note that the
+## 'xtra' directory might not exist for some installations)
+@TESTPODS = ();
+my $testdir  = File::Spec->catfile('t', 'pod');
+my $test2dir = File::Spec->catfile($testdir, 'xtra');
+my @testdirs = ($testdir);
+push @testdirs, $test2dir if (-d $testdir);
+@TESTPODS = map { File::Spec->catfile($_, '*.t') } @testdirs;
+
+## If WriteMakefile had a TEST_FILES attribute we could just use that,
+## but since it doesnt we have to resort to this below to override
+## using t/*.t as the suite of test-scripts!
+sub MY::test {
+    package MY; # so that "SUPER" works right
+    my $inherited  = shift->SUPER::test(@_);
+    my $test_files = "@main::TESTPODS";
+    $inherited =~ s/^(\s*TEST_FILES\s*=\s*)(.*)$/$1$test_files/m;
+    $inherited;
+}
+
+
 ##-----------------------------------------------------------------------
 ## Instructions to write the Makefile (see Ext::MakeMaker)
 
@@ -38,3 +60,5 @@ WriteMakefile(
        (ABSTRACT   => 'Modules for parsing/translating POD format documents',
         AUTHOR     => 'Brad Appleton <bradapp@enteract.com>') : ()),
 );
+
+

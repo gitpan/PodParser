@@ -1,7 +1,8 @@
 BEGIN {
    use File::Basename;
-   my $THISDIR = dirname $0;
-   unshift @INC, $THISDIR;
+   use Cwd qw(abs_path);
+   my $THISDIR = abs_path(dirname $0);
+   unshift @INC, $THISDIR, dirname($THISDIR);
    require "testp2pt.pl";
    import TestPodIncPlainText;
 }
