@@ -10,7 +10,7 @@
 package Pod::ParseUtils;
 
 use vars qw($VERSION);
-$VERSION = 0.1;    ## Current version of this package
+$VERSION = 0.2;    ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -26,8 +26,8 @@ Pod::ParseUtils - helpers for POD parsing and conversion
 
 =head1 DESCRIPTION
 
-B<Pod::ParseUtils> contains currently two object-oriented helper
-packages.
+B<Pod::ParseUtils> contains a few object-oriented helper packages for
+POD parsing and processing (i.e. in POD formatters and translators).
 
 =cut
 
@@ -550,6 +550,8 @@ sub type {
 
 Returns the link as contents of C<LE<lt>E<gt>>. Reciprocal to B<parse()>.
 
+=back
+
 =cut
 
 # The link itself
@@ -581,6 +583,198 @@ sub _invalid_link {
     $@ = $msg; # this seems to work, too!
     undef;
 }
+
+#-----------------------------------------------------------------------------
+# Pod::Cache
+#
+# class to hold POD page details
+#-----------------------------------------------------------------------------
+
+package Pod::Cache;
+
+=head2 Pod::Cache
+
+B<Pod::Cache> holds information about a set of POD documents,
+especially the nodes for hyperlinks.
+The following methods are available:
+
+=over 4
+
+=item new()
+
+Create a new cache object. This object can hold an arbitrary number of
+POD documents of class Pod::Cache::Item.
+
+=cut
+
+sub new {
+    my $this = shift;
+    my $class = ref($this) || $this;
+    my $self = [];
+    bless $self, $class;
+    return $self;
+}
+
+=item item()
+
+Add a new item to the cache. Without arguments, this method returns a
+list of all cache elements.
+
+=cut
+
+sub item {
+    my ($self,%param) = @_;
+    if(%param) {
+        my $item = Pod::Cache::Item->new(%param);
+        push(@$self, $item);
+        return $item;
+    }
+    else {
+        return @{$self};
+    }
+}
+
+=item find_page($name)
+
+Look for a POD document named C<$name> in the cache. Returns the
+reference to the corresponding Pod::Cache::Item object or undef if
+not found.
+
+=back
+
+=cut
+
+sub find_page {
+    my ($self,$page) = @_;
+    foreach(@$self) {
+        if($_->page() eq $page) {
+            return $_;
+        }
+    }
+    undef;
+}
+
+package Pod::Cache::Item;
+
+=head2 Pod::Cache::Item
+
+B<Pod::Cache::Item> holds information about individual POD documents,
+that can be grouped in a Pod::Cache object.
+It is intended to hold information about the hyperlink nodes of POD
+documents.
+The following methods are available:
+
+=over 4
+
+=item new()
+
+Create a new object.
+
+=cut
+
+sub new {
+    my $this = shift;
+    my $class = ref($this) || $this;
+    my %params = @_;
+    my $self = {%params};
+    bless $self, $class;
+    $self->initialize();
+    return $self;
+}
+
+sub initialize {
+    my $self = shift;
+    $self->{-nodes} = [] unless(defined $self->{-nodes});
+}
+
+=item page()
+
+Set/retrieve the POD document name (e.g. "Pod::Parser").
+
+=cut
+
+# The POD page
+sub page {
+   return (@_ > 1) ? ($_[0]->{-page} = $_[1]) : $_[0]->{-page};
+}
+
+=item description()
+
+Set/retrieve the POD short description as found in the C<=head1 NAME>
+section.
+
+=cut
+
+# The POD description, taken out of NAME if present
+sub description {
+   return (@_ > 1) ? ($_[0]->{-description} = $_[1]) : $_[0]->{-description};
+}
+
+=item path()
+
+Set/retrieve the POD file storage path.
+
+=cut
+
+# The file path
+sub path {
+   return (@_ > 1) ? ($_[0]->{-path} = $_[1]) : $_[0]->{-path};
+}
+
+=item file()
+
+Set/retrieve the POD file name.
+
+=cut
+
+# The POD file name
+sub file {
+   return (@_ > 1) ? ($_[0]->{-file} = $_[1]) : $_[0]->{-file};
+}
+
+=item nodes()
+
+Add a node (or a list of nodes) to the document's node list. Note that
+the order is kept, i.e. start with the first node and end with the last.
+If no argument is given, the current list of nodes is returned in the
+same order the nodes have been added.
+A node can be any scalar, but usually is a pair of node string and
+unique id for the C<find_node> method to work correctly.
+
+=cut
+
+# The POD nodes
+sub nodes {
+    my ($self,@nodes) = @_;
+    if(@nodes) {
+        push(@{$self->{-nodes}}, @nodes);
+        return @nodes;
+    }
+    else {
+        return @{$self->{-nodes}};
+    }
+}
+
+=item find_node($name)
+
+Look for a node named C<$name> in the object's node list. Returns the
+unique id of the node (i.e. the second element of the array stored in
+the node arry) or undef if not found.
+
+=back
+
+=cut
+
+sub find_node {
+    my ($self,$node) = @_;
+    foreach(@{$self->{-nodes}}) {
+        if($_->[0] eq $node) {
+            return $_->[1]; # id
+        }
+    }
+    undef;
+}
+
 
 =head1 AUTHOR
 

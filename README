@@ -58,11 +58,18 @@
    complete. Its just a starting point that I hope others who plan to
    use it can help me flesh it out further.
 
+ Pod::ParseUtils
+ ---------------
+   A module with several object-oriented helpers for POD parsing and
+   processing. Probably the most important is Pod::Hyperlink for
+   parsing and expanding POD hyperlinks L<...>.
+
 
  AUTHORS/CONTRIBUTORS
  ====================
  Brad Appleton  <bradapp@enteract.com>  http://www.enteract.com/~bradapp/
  Russ Allbery   <rra@standford.edu>
+ Marek Rouchal  <marek@saftsack.fs.uni-bayreuth.de>
 
 
  ACKNOWLEDGEMENTS
