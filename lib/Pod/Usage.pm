@@ -10,7 +10,7 @@
 package Pod::Usage;
 
 use vars qw($VERSION);
-$VERSION = 1.14;  ## Current version of this package
+$VERSION = 1.15;  ## Current version of this package
 require  5.005;    ## requires this Perl version or later
 
 =head1 NAME
@@ -506,7 +506,7 @@ sub pod2usage {
              and  $opts{"-output"} == \*STDOUT )
     {
        ## spit out the entire PODs. Might as well invoke perldoc
-       my $progpath = File::Spec->catfile($Config{bin}, "perldoc");
+       my $progpath = File::Spec->catfile($Config{scriptdir}, "perldoc");
        system($progpath, $opts{"-input"});
     }
     else {
