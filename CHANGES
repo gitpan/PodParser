@@ -1,3 +1,11 @@
+ 15-Dec-1999           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.091
+ + cleaned up Pod::Checker, especially documentation, updated test
+ + moved helper code to new module Pod::ParseUtils, added documentation
+ + added Pod::Find, along with a test
+
+
  22-Oct-1999           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.090

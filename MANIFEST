@@ -6,10 +6,12 @@ Makefile.PL  -- Perl Makefile template
 
 lib/Pod/InputObjects.pm -- Input objects for Pod::Parser
 lib/Pod/Parser.pm    -- The Pod::Parser module source
+lib/Pod/ParseUtils.pm -- The Pod::ParseUtils module source
 lib/Pod/Select.pm    -- The Pod::Select module source
 lib/Pod/PlainText.pm -- The Pod::PlainText module source
 lib/Pod/Usage.pm     -- The Pod::Usage module source
 lib/Pod/Checker.pm   -- The Pod::Checker module source
+lib/Pod/Find.pm      -- The Pod::Find module source
 
 scripts/podselect.PL -- Script to print selected sections of pod docs in raw
                         pod format (a command-line interface to podselect()).
@@ -22,6 +24,7 @@ t/pod/testp2pt.pl     -- module used to test Pod::PlainText for a given file
 t/pod/testpchk.pl     -- module used to test Pod::Checker for a given file
 t/pod/emptycmd.t      -- test-input file for an empty pod directive
 t/pod/emptycmd.xr     -- expected result from processing emptycmd.t
+t/pod/find.t          -- test for Pod::Find
 t/pod/for.t           -- test-input file for =for directives
 t/pod/for.xr          -- expected result from processing for.t
 t/pod/headings.t      -- test-input file for =head directives
