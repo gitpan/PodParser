@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's Pod::Text module
 # (with extensive modifications).
 #
-# Copyright (C) 1996 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1998 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,8 +12,8 @@
 
 package Pod::Parser;
 
-$VERSION = 1.04;   ## Current version of this package
-require  5.003;    ## requires Perl version 5.003 or later
+$VERSION = 1.05;   ## Current version of this package
+require  5.003;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -605,12 +605,14 @@ sub parse_paragraph {
     ## Look for one of the three types of paragraphs
     my ($pfx, $cmd, $arg, $sep) = ('', '', '', '');
     my $pod_para = undef;
-    if ($text =~ /^={1,2}(?=\S)/) {
+    if ($text =~ /^(={1,2})(?=\S)/) {
         ## Looks like a command paragraph. Capture the command prefix used
         ## ("=" or "=="), as well as the command-name, its paragraph text,
         ## and whatever sequence of characters was used to separate them
-        ($pfx, $_) = ($&, $');
-        ($cmd, $sep, $text) = /\s+(?:\Z(?!\n))?/ ? ($`, $&, $') : ($_, '', '');
+        $pfx = $1;
+        $_ = substr($text, length $pfx);
+        $sep = /(\s+)(?=\S)/ ? $1 : '';
+        ($cmd, $text) = split(" ", $_, 2);
         ## If this is a "cut" directive then we dont need to do anything
         ## except return to "cutting" mode.
         if ($cmd eq 'cut') {
@@ -970,8 +972,6 @@ input stack.
 Each element on this input stack is a reference to C<Pod::InputSource>
 object. Please see L<Pod::InputObjects> for more details.
 
-=back
-
 This method might be invoked when printing diagnostic messages, for example,
 to obtain the name and line number of the all input files that are currently
 being processed.
@@ -1076,11 +1076,13 @@ sub _interpolate_bottom_up {
     my ($seq_cmd, $seq_arg, $end) = ('', '', undef);
     my $pod_sequence = undef;
     ## Parse all sequences until end-of-string or we match the end-regex
-    while (($text ne '')  &&  ($text =~ /([A-Z])<|($end_re)/)) {
-        $result .= $`;  ## Append text before the match to the result
-        $text = $';     ## Only text after the match remains to be processed
+    while (($text ne '')  &&  ($text =~ /^(.*?)(([A-Z])<|($end_re))/)) {
+        ## Append text before the match to the result
+        $result .= $1;
         ## See if we matched an interior sequence or an end-expression
-        ($seq_cmd, $end) = ($1, $2);
+        ($seq_cmd, $end) = ($3, $4);
+        ## Only text after the match remains to be processed
+        $text = substr($text, length($1) + length($2));
         ## Was this the end of the sequence
         if (! defined $seq_cmd) {
             last  if ($end_re eq '$');
@@ -1092,7 +1094,7 @@ sub _interpolate_bottom_up {
             ## The following is a *hack* to allow '->' and '=>' inside of
             ## C<...> sequences (but not '==>' or '-->')
             if (($end eq '>') && (@{$seq_stack} > 0)) {
-                my $top_cmd = $seq_stack->[$#{$seq_stack}]->cmd_name();
+                my $top_cmd = $seq_stack->[-1]->cmd_name();
                 ## Exit the loop if this was the end of the sequence.
                 last unless (($top_cmd eq 'C') && ($result =~ /[^-=][-=]$/));
                 ## This was a "false-end" that was really '->' or '=>'
@@ -1229,7 +1231,7 @@ sub _pop_input_stream {
     ## Dont to reset the input indicators
     my $input_top = undef;
     if (@{$input_stack} > 0) {
-       $input_top = $self->{_TOP_STREAM} = $input_stack->[$#{$input_stack}];
+       $input_top = $self->{_TOP_STREAM} = $input_stack->[-1];
        $self->{_INFILE}  = $input_top->name();
        $self->{_INPUT}   = $input_top->handle();
     } else {

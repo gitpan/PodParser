@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's pod2text() function
 # (with extensive modifications).
 #
-# Copyright (C) 1996 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1998 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,8 +12,8 @@
 
 package Pod::Select;
 
-require  5.003;    ## requires Perl version 5.002 or later
-$VERSION = 1.04;   ## Current version of this package
+$VERSION = 1.05;   ## Current version of this package
+require  5.003;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -500,7 +500,7 @@ sub podselect {
             ##-------------------------------------------------------------
             %opts = map {
                 my $val = $opts{$_};
-                s/^\w/-$&/;
+                s/^(?=\w)/-/;
                 /^-se[cl]/i  and  $_ = '-sections';
                 lc($_) => $val;    
             } (keys %opts);

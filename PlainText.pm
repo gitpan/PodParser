@@ -4,7 +4,7 @@
 # Derived from Tom Christiansen's Pod::PlainText module
 # (with extensive modifications).
 #
-# Copyright (C) 1994-1996 Tom Christiansen. All rights reserved.
+# Copyright (C) 1994-1998 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,8 +12,8 @@
 
 package Pod::PlainText;
 
-$VERSION = 1.04;   ## Current version of this package
-require  5.003;    ## requires Perl version 5.002 or later
+$VERSION = 1.05;   ## Current version of this package
+require  5.003;    ## requires this Perl version or later
 
 =head1 NAME
 
@@ -288,8 +288,7 @@ sub item {
     my $out_fh  = $self->output_handle();
     return  unless (defined  $self->{ITEM});
     my $paratag = $self->{ITEM};
-    my $prev_indent = $self->{INDENTS}->[$#{$self->{INDENTS}}]
-                      || $self->{DEF_INDENT};
+    my $prev_indent = $self->{INDENTS}->[-1] || $self->{DEF_INDENT};
     ## reset state
     undef $self->{ITEM};
     #$self->rm_callbacks('*');
@@ -335,8 +334,7 @@ sub IP_output {
     my $tag   = shift;
     local($_) = @_;
     my $out_fh  = $self->output_handle();
-    my $tag_indent  = $self->{INDENTS}->[$#{$self->{INDENTS}}]
-                      || $self->{DEF_INDENT};
+    my $tag_indent  = $self->{INDENTS}->[-1] || $self->{DEF_INDENT};
     my $tag_cols = $self->{SCREEN} - $tag_indent;
     my $cols = $self->{SCREEN} - $self->{INDENT};
     $tag =~ s/\s*$//;
@@ -474,7 +472,7 @@ sub end_pod {
 sub begun_excluded {
     my $self = shift;
     my @begun = @{ $self->{BEGUN} };
-    return (@begun > 0) ? ($begun[$#begun] ne 'text') : 0;
+    return (@begun > 0) ? ($begun[-1] ne 'text') : 0;
 }
 
 sub command {
@@ -524,7 +522,7 @@ sub command {
        pop( @{ $self->{BEGUN} } );
     }
     elsif ($cmd eq 'for') {
-       $self->textblock($')  if (/^text\b\s*/);
+       $self->textblock($1)  if /^text\b\s*(.*)$/s;
     }
     elsif ($cmd eq 'item') {
         $self->makespace();
@@ -598,8 +596,8 @@ sub interior_sequence {
         if (/^\s*"\s*(.*)\s*"\s*$/o) {
             ($manpage, $sec) = ('', "\"$1\"");
         }
-        elsif (m|\s*/\s*|o) {
-            ($manpage, $sec) = ($`, $');
+        elsif (m|\s*/\s*|s) {
+            ($manpage, $sec) = split(/\s*\/\s*/, $_, 2);
         }
         if ($sec eq '') {
             $ref .= "the $manpage manpage"  if ($manpage ne '');

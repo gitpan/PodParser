@@ -20,17 +20,6 @@
    Please see the POD documentation for this module (embedded in the
    file "Select.pm") and Pod::Parser for more details.
 
- Pod::Parser
- ----------
-   The Perl5 module "Pod::Parser", which provides a subclass of
-   Pod::Parser and an exported function named "podparse()" that lets
-   the programmer use callbacks instead of and/or in addition to
-   inheritance+polymorphism. This module makes it much easier to
-   use Pod::Parser with existing code, and with code that is not
-   object-oriented . Please see the POD documentation for this
-   module (embedded in the file "Parse.pm") and Pod::Parser for more
-   details.
-
  Pod::Usage
  ----------
    The Perl5 module "Pod::Usage" which provides the function "pod2usage()"
@@ -88,8 +77,8 @@
      not yet completed.  Pod::Simplify (formerly "Pod::Parse") is loaded
      with *lots* of goodies for formatting and translation heuristics for
      converting POD docs into other documentation formats.  If it seems
-     feasible, Kenneth and Brad will try to have Pod::Simplify be a
-     subclass of Pod::Parser when it is completed.
+     feasible, Kenneth and Brad will try to have Pod::Simplify work and
+     play nicely with Pod::Parser when it is completed.
 
  * Steven McDougall <swmcd@world.std.com> for his help and patience with
    re-writing the manpage for Pod::Usage and Pod::Parser.
@@ -97,7 +86,7 @@
 
  COPY/REUSE POLICY
  =================
- Copyright (C) 1996 Tom Christiansen. All rights reserved.
+ Copyright (C) 1996-1998 by Tom Christiansen. All rights reserved.
 
  PodParser is free software; you can redistribute it and/or modify it
  under the terms of the Artistic License distributed with Perl version
@@ -192,7 +181,7 @@
    POD parsing engine).
 
  * Make changes necessary to accommodate Kenneth Albanowski's Pod::Simplify
-   module so that it may be a subclass of Pod::Parser.
+   module so that it may use Pod::Parser.
 
  * See about providing the ability (perhaps via constructor options) to turn
    off certain unwanted Pod::Parser features in order to improve performance
@@ -209,6 +198,14 @@
 
  HISTORY
  =======
+ 12-Feb-1998           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.05
+ - Fixed a bug in Pod::Usage (it was using an obsolete name to access an
+   attribute instead of using the new access method).
+ - Removed the use of $`, $&, and $' throughout all modules in this package.
+ 
+ Version 1.04
  22-Dec-1997           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.04
@@ -233,7 +230,7 @@
      before you begin the next paragraph). NOTE that this only works
      for the *beginning* of a paragraph!! If the '==' begins a line
      in the *middle* of a paragraph, then it receives no special treatment
-     and is not considered to be the beginning of a new POD directive).
+     and is not considered to be the beginning of a new POD directive.
      If this added convenience seems confusing at first, just remember the
      following phrases:
         "LESS IS MORE" -- LESS equals signs need MORE newlines!
@@ -277,8 +274,8 @@
      modify its first argument.
 
    * _interpolate_bottom_up() contains a small but ugly *hack* to allow
-     '->' and '=>' to remain untouched inside of C<...> without having
-     to use the E<gt> escape sequence PROVIDED THAT there is something
+     '->' and '=>' to remain untouched inside of C<...> (without having
+     to use the E<gt> escape sequence) PROVIDED THAT there is something
      to the left of it OTHER THAN another '-' or '='.
 
    * The 'select()' and 'want_section()' methods have moved from Pod::Parser

@@ -2,7 +2,7 @@
 # Pod/InputObjects.pm -- package which defines objects for input streams
 # and paragraphs and commands when parsing POD docs.
 #
-# Copyright (C) 1996 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1998 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -10,8 +10,8 @@
 
 package Pod::InputObjects;
 
-$VERSION = 1.04;   ## Current version of this package
-require  5.003;    ## requires Perl version 5.003 or later
+$VERSION = 1.05;   ## Current version of this package
+require  5.003;    ## requires this Perl version or later
 
 #############################################################################
 
@@ -452,7 +452,29 @@ or massage in some manner).
 sub text {
    $_[0]->{'-text'} = $_[1]  if (@_ > 1);
    return $_[0]->{'-text'};
+}       
+
+=item B<list()>
+
+        my $seq_ref  = $pod_seq->list();
+      or
+        my @seq_list = $pod_seq->list();
+
+The list of things in the interior sequence (this is what the command will modify
+or massage in some manner).
+
+=cut
+
+sub list
+{
+ my $o = shift;
+ if (@_)
+  {
+   $o->{'-list'} = [@_];
+  }
+ return (wantarray) ? (@{$o->{'-list'}}) : $o->{'-list'};
 }
+
 
 ##---------------------------------------------------------------------------
 

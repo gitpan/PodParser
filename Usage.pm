@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's Pod::Text::pod2text() function
 # (with modifications).
 #
-# Copyright (C) 1994-1996 Tom Christiansen. All rights reserved.
+# Copyright (C) 1994-1998 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,8 +12,8 @@
 
 package Pod::Usage;
 
-$VERSION = 1.04;   ## Current version of this package
-require  5.003;    ## requires Perl version 5.002 or later
+$VERSION = 1.05;   ## Current version of this package
+require  5.003;    ## requires this Perl version or later
 
 =head1 NAME
 
@@ -396,7 +396,7 @@ sub pod2usage {
     ## to be uppercase keywords)
     %opts = map {
         my $val = $opts{$_};
-        s/^\w/-$&/;
+        s/^(?=\w)/-/;
         /^-msg/i   and  $_ = '-message';
         /^-exit/i  and  $_ = '-exitval';
         lc($_) => $val;    
@@ -467,9 +467,9 @@ sub new {
 sub begin_pod {
     my $self = shift;
     $self->SUPER::begin_pod();  ## Have to call superclass
-    return  1  unless  (defined $self->{USAGE_OPTIONS}->{-msg});
-    my $out_fh = $self->{-output};
-    print $out_fh "$self->{USAGE_OPTIONS}->{-msg}\n";
+    my $msg = $self->{USAGE_OPTIONS}->{-message}  or  return 1;
+    my $out_fh = $self->output_handle();
+    print $out_fh "$msg\n";
 }
 
 sub preprocess_paragraph {
