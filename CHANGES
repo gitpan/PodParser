@@ -1,3 +1,12 @@
+ 07-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.16
+ + included two subs suggested by Tim Jenness <t.jenness@jach.hawaii.edu>
+   in Pod::Find (pod_where and contains_pod) and included a test in
+   t/pod/find.t
+ + updated Makefile.PL, CHANGES and TODO
+
+
  03-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.15
@@ -6,6 +15,7 @@
  + improved documentation in Pod::Checker
  + improved code coverage of t/pod/poderrs.t
  + updated TODO
+
 
  04-Jun-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
