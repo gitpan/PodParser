@@ -1,3 +1,14 @@
+ 01-Sep-2000           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.18
+ + Fixed error in failing recognize empty C<<  >> sequences
+ + Modified pod2usage to use perldoc if ultra-verbose mode is set
+   and input is a filename and output is STDOUT (so now it doesnt just
+   print the manpage, it pretty prints it and paginates it)
+ + Allowed -exitval => NOEXIT to be given to pod2usage to instruct it
+   NOT to exit the running script.
+ + Applied VMS patches from Tim Jennes to t/pod/find.t and lib/Pod/Find.pm
+
  25-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.17
