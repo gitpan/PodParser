@@ -1,3 +1,16 @@
+ 23-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
+                       Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.11
+ + Fixed Pod::Parser warnings about non-empty blank lines in code
+ + added note about extraction capabilities of Pod::Checker to README
+ + added collection of index entries X<...> (Pod::Checker)
+ + extented internal hyperlink node uniqueness check (Pod::Checker)
+ + added documentation in Pod::Checker for built-in methods
+   (nodes, hyperlinks, X<...> entries) 
+ + minor cleanups (find_node in Pod::Cache::Item) and changed priority
+   in parsing L<...> (Pod::ParseUtils)
+
  22-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.10
@@ -8,7 +21,7 @@
                        Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.093
- + added mandatory warning for non-empty blank lines matching /^\s+$/
+ + Pod::Parser now warns about non-empty blank lines matching /^\s+$/
  + got rid of special handling of '=>' and '=>' inside C<..> and instead
    implemented the more general rules posted by Larry Wall on P5P allowing
    /[A-Z]<...>/ and /[A-Z]<[<:]\s+...\s+[:>]>/ to deal with things like

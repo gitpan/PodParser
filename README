@@ -57,6 +57,8 @@
    very beginning stages right now and is *far* from being thorough or
    complete. Its just a starting point that I hope others who plan to
    use it can help me flesh it out further.
+   This module also collects information about hyperlink nodes of the
+   document processed that can be used by converters later on.
 
  Pod::ParseUtils
  ---------------
