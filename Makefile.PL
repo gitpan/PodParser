@@ -48,7 +48,7 @@ push @testdirs, $test2dir if (-d $test2dir);
 WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
-    VERSION_FROM => 'lib/Pod/Parser.pm',  ## Finds distribution $VERSION
+    VERSION      => 1.13,
     PL_FILES     => { map { (script("$_.PL") => script($_)) } @SCRIPTS },
     EXE_FILES    => [ @EXE_FILES ],
     dist         => { COMPRESS => 'gzip', SUFFIX => 'gz' },

@@ -1,3 +1,16 @@
+ 14-Mar-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ 16-Mar-2000           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.13
+ + Improved support of Win32 and OS/2 platforms by using File::Spec in
+   Pod::Find
+ + strip .bat and .cmd on Win32 and OS/2, respectively
+ + removed all tabs from Pod::Find and reviewed POD documentation
+ + finally fixed t/pod/ptestpchk.pl to ignore any and all non-word-chars
+   in pathnames. No more special casing filenames for MacOS, NT, VMS, etc
+   just for the sake of passing the t/pod/poderrs.t test!
+
+
  11-Mar-2000           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.12
