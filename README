@@ -153,6 +153,7 @@
  * Perl version 5.005 or later
 
  * File::Spec from CPAN (already bundled in Perl 5.005)
+   at least version 0.8, previous ones lack some functions needed here
 
 
  BUILDING & INSTALLING

@@ -13,7 +13,7 @@
 package Pod::Find;
 
 use vars qw($VERSION);
-$VERSION = 0.2;   ## Current version of this package
+$VERSION = 0.21;   ## Current version of this package
 require  5.005;   ## requires this Perl version or later
 use Carp;
 
@@ -32,6 +32,8 @@ Pod::Find - find POD documents in directory trees
   }
 
   print "podname=",simplify_name('a/b/c/mymodule.pod'),"\n";
+
+  $location = pod_where( { -inc => 1 }, "Pod::Find" );
 
 =head1 DESCRIPTION
 
@@ -273,7 +275,8 @@ Options:
 
 =item C<-inc =E<gt> 1>
 
-Search @INC for the pod
+Search @INC for the pod and also the C<scriptdir> defined in the
+L<Config|Config> module.
 
 =item C<-dirs =E<gt> [ $dir1, $dir2, ... ]>
 
@@ -292,6 +295,10 @@ Package names (eg 'A::B') are automatically converted to directory
 names in the selected directory. (eg on unix 'A::B' is converted to
 'A/B'). Additionally, '.pm', '.pl' and '.pod' are appended to the
 search automatically if required.
+
+A subdirectory F<pod/> is also checked if it exists in any of the given
+search directories. This ensures that e.g. L<perlfunc|perlfunc> is
+found.
 
 It is assumed that if a module name is supplied, that that name
 matches the file name. Pods are not opened to check for the 'NAME'
@@ -334,13 +341,16 @@ sub pod_where {
   if ($options{'-inc'}) {
 
     require Config;
-  
+
     # Add @INC
     push (@search_dirs, @INC) if $options{'-inc'};
 
     # Add location of pod documentation for perl man pages (eg perlfunc)
-    push (@search_dirs, $Config::Config{'installprivlib'} .'/pod')
-      if -d $Config::Config{'installprivlib'} .'/pod';
+    # This is a pod directory in the private install tree
+    #my $perlpoddir = File::Spec->catdir($Config::Config{'installprivlib'},
+    #					'pod');
+    #push (@search_dirs, $perlpoddir)
+    #  if -d $perlpoddir;
 
     # Add location of binaries such as pod2text
     push (@search_dirs, $Config::Config{'scriptdir'})
@@ -348,7 +358,7 @@ sub pod_where {
   }
 
   # Loop over directories
-  foreach my $dir ( @search_dirs ) {
+  Dir: foreach my $dir ( @search_dirs ) {
 
     # Don't bother if cant find the directory
     if (-d $dir) {
@@ -362,16 +372,21 @@ sub pod_where {
 
       # Loop over possible extensions
       foreach my $ext ('', '.pod', '.pm', '.pl') {
-
-        if (-f $fullname . $ext && 
-         contains_pod($fullname . $ext, $options{'-verbose'}) ) {
-          warn "FOUND: " .$fullname.$ext . "\n"
-            if $options{'-verbose'};
-          return $fullname .$ext;
+        my $fullext = $fullname . $ext;
+        if (-f $fullext && 
+         contains_pod($fullext, $options{'-verbose'}) ) {
+          warn "FOUND: $fullext\n" if $options{'-verbose'};
+          return $fullext;
         }
       }
     } else {
-      warn "Directory $dir does not exist\n";
+      warn "Directory $dir does not exist\n"
+        if $options{'-verbose'};
+      next Dir;
+    }
+    if(-d File::Spec->catdir($dir,'pod')) {
+      $dir = File::Spec->catdir($dir,'pod');
+      redo Dir;
     }
   }
   # No match;

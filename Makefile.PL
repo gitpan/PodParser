@@ -8,6 +8,9 @@ BEGIN {
     require 5.005;
     eval { require File::Spec };
     $@  and  die "You need to install the File::Spec module first!\n";
+	if(($File::Spec::VERSION || 0) < 0.8) {
+	  die "You need at least version 0.8 of the File::Spec module!\n";
+	}
 }
 
 use ExtUtils::MakeMaker;
@@ -48,7 +51,7 @@ push @testdirs, $test2dir if (-d $test2dir);
 WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
-    VERSION      => 1.16,
+    VERSION      => 1.17,
     PL_FILES     => { map { (script("$_.PL") => script($_)) } @SCRIPTS },
     EXE_FILES    => [ @EXE_FILES ],
     dist         => { COMPRESS => 'gzip', SUFFIX => 'gz' },

@@ -1,3 +1,14 @@
+ 25-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.17
+ + included small fixes by Tim Jenness <t.jenness@jach.hawaii.edu> to
+   Pod::Find and t/pod/find.t
+ + extended logic in Pod::Find to search for pod/ subdirectories in all
+   given subdirectories (in pod_where function) to find e.g. "perlfunc".
+   Thus pod_where could be used by perldoc.
+ + added check for recent File::Spec version in Makefile.PL
+ + updated Makefile.PL, CHANGES, README
+
  07-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.16

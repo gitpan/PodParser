@@ -5,7 +5,7 @@ $| = 1;
 
 use Test;
 
-BEGIN { plan tests => 3 }
+BEGIN { plan tests => 4 }
 
 use Pod::Find qw(pod_find pod_where);
 use File::Spec;
@@ -15,6 +15,7 @@ ok(1);
 
 require Cwd;
 my $THISDIR = Cwd::cwd();
+my $VERBOSE = 0;
 
 print "*** searching $THISDIR/lib\n";
 my %pods = pod_find("$THISDIR/lib");
@@ -36,11 +37,21 @@ ok($result,$compare);
 # and on all platforms, hopefully
 
 print "*** searching for File::Find\n";
-$result = pod_where({ -inc => 1, -verbose => 0 }, 'File::Find')
+$result = pod_where({ -inc => 1, -verbose => $VERBOSE }, 'File::Find')
   || 'undef - pod not found!';
+print "*** found $result\n";
 
 require Config;
-$compare = "$Config::Config{privlib}/File/Find.pm";
+$compare = File::Spec->catfile($Config::Config{privlib},"File","Find.pm");
+ok(_canon($result),_canon($compare));
+
+# Search for a documentation pod rather than a module
+print "*** searching for perlfunc.pod\n";
+$result = pod_where({ -inc => 1, -verbose => $VERBOSE }, 'perlfunc')
+  || 'undef - perlfunc.pod not found!';
+print "*** found $result\n";
+
+$compare =  File::Spec->catfile($Config::Config{privlib},"perlfunc.pod");
 ok(_canon($result),_canon($compare));
 
 # make the path as generic as possible
