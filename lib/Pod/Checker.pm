@@ -10,7 +10,7 @@
 package Pod::Checker;
 
 use vars qw($VERSION);
-$VERSION = 1.098;  ## Current version of this package
+$VERSION = 1.1;  ## Current version of this package
 require  5.005;    ## requires this Perl version or later
 
 use Pod::ParseUtils; ## for hyperlinks and lists
@@ -44,7 +44,8 @@ This function can take a hash of options:
 
 =item B<-warnings> =E<gt> I<val>
 
-Turn warnings on/off. See L<"Warnings">.
+Turn warnings on/off. I<val> is usually 1 for on, but higher values
+trigger additional warnings. See L<"Warnings">.
 
 =back
 
@@ -212,10 +213,14 @@ There is some whitespace on a seemingly empty line. POD is very sensitive
 to such things, so this is flagged. B<vi> users switch on the B<list>
 option to avoid this problem.
 
+=begin _disabled_
+
 =item * file does not start with =head
 
 The file starts with a different POD directive than head.
 This is most probably something you do not want.
+
+=end _disabled_
 
 =item * No numeric argument for =over
 
@@ -243,7 +248,8 @@ type of the I<first> C<=item> determines the type of the list.
 
 Angle brackets not written as C<E<lt>ltE<gt>> and C<E<lt>gtE<gt>>
 can potentially cause errors as they could be misinterpreted as
-markup commands.
+markup commands. This is only printed when the -warnings level is
+greater than 1.
 
 =item * Unknown entity
 
@@ -688,11 +694,14 @@ sub end_pod {
     my %nodes;
     foreach($self->node()) {
         $nodes{$_} = 1;
-        if(/^(\S+)\s+/) {
+        if(/^(\S+)\s+\S/) {
             # we have more than one word. Use the first as a node, too.
             # This is used heavily in perlfunc.pod
             $nodes{$1} ||= 2; # derived node
         }
+    }
+    foreach($self->idx()) {
+        $nodes{$_} = 3; # index node
     }
     foreach($self->hyperlink()) {
         my ($line,$link) = @$_;
@@ -743,14 +752,17 @@ sub command {
        $self->poderror({ -line => $line, -file => $file, -severity => 'ERROR',
                          -msg => "Unknown command '$cmd'" });
     }
-    else {
-        # found a valid command
-        if(!$self->{_commands}++ && $cmd !~ /^head/) {
-            $self->poderror({ -line => $line, -file => $file,
-                 -severity => 'WARNING', 
-                 -msg => "file does not start with =head" });
-        }
-        ## check syntax of particular command
+    else { # found a valid command
+        $self->{_commands}++; # delete this line if below is enabled again
+
+        ##### following check disabled due to strong request
+        #if(!$self->{_commands}++ && $cmd !~ /^head/) {
+        #    $self->poderror({ -line => $line, -file => $file,
+        #         -severity => 'WARNING', 
+        #         -msg => "file does not start with =head" });
+        #}
+
+        # check syntax of particular command
         if($cmd eq 'over') {
             # check for argument
             $arg = $self->interpolate_and_check($paragraph, $line,$file);
@@ -1002,12 +1014,13 @@ sub _check_ptree {
         unless(ref) {
             my $count;
             # count the unescaped angle brackets
+            # complain only when warning level is greater than 1
             my $i = $_;
             if($count = $i =~ tr/<>/<>/) {
                 $self->poderror({ -line => $line, -file => $file,
                      -severity => 'WARNING', 
                      -msg => "$count unescaped <> in paragraph" })
-                if($self->{-warnings});
+                if($self->{-warnings} && $self->{-warnings}>1);
             }
             $text .= $i;
             next;

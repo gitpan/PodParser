@@ -48,11 +48,47 @@
    to pass the callback method an array of lines or of paragraphs (rather
    than one input block at a time) if certain options are specified.
 
-Comments by Wolfgang Laun wrt Pod::Checker:
+Pod::Checker etc.:
+
+  implement L<|link>, i.e. empty alttext gives link text only.
+
+Brad:
+
+ * I do not think there should ever be any complaint about the first
+   =pod directive being something other than =head (or other than =pod and
+   =head) unless some kind of '-strictmanpagestyle' option is set. There is
+   no law that says the beginning of ever document has to be a heading.
+   Sometimes it useful to have an untitled intro. Now it *is* true that any
+   manpage should start with a heading, but not any POD document in general.
+
+   => implement '-manpage' switch?!?
+
+Wolfgang Laun:
 
  * =over/=back without intervening =item produces a warning even when
    there are pararaphs in between. But this could be used to produce
    indented paragraphs. Restrict warning to completely empty lists?
 
+   => is this legal POD at all? Currently a warning is printed
+
  * A =head2 without preceding =head1 might deserve a warning.
+
+ * An orphaned paragraph before the first =head might get a warning.
+
+   => there are reasons why this is not wanted. see above
+
+Tim Jenness <timj@jach.hawaii.edu>:
+
+ * I wrote a routine where_pod that can return the location of a pod
+   file, when given a module name. It will search a specified set of
+   directories and, optionally, @INC and return the file name and full
+   location so that it can be given to a parse_from_file() method.
+   This could easily fit into the Pod::Find module.
+   The pod_find module finds all the pods in a directory tree whereas
+   where_pod finds the location of a specific module.
+
+ * I found that a contains_pod() command was quite useful.
+   Is there a generic method for this in the Pod modules? I used
+   part of _check_extract_name() in Pod::Find but that does more than
+   was required.                           
 

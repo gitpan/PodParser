@@ -1,3 +1,18 @@
+ 04-Jun-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.14
+ + fixed wrong value in Pod::Parser concerning whitespace lines
+ + added check in podchecker whether argument is a directory
+ + introduce additional warning level: this suppresses the complaints
+   about unescaped <>, but the check is enabled when the wrning level is
+   increased: podchecker -warn -warn
+   adapted documentation appropriately
+ + Pod::Hyperlink now parses L<open(2)> again, but gives a warning. The
+   calling programs have to check themselves for what to do with pages
+   like open(2).
+ + Changed POD of several modules so that they conform to podchecker :-)
+
+
  14-Mar-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  16-Mar-2000           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------

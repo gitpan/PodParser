@@ -19,15 +19,14 @@
 *** ERROR: garbled entity E<abcI<bla>> at line 86 in file t/pod/poderrs.t
 *** WARNING: collapsing newlines to blanks at line 96 in file t/pod/poderrs.t
 *** ERROR: malformed link L<> : empty link at line 98 in file t/pod/poderrs.t
+*** WARNING: (section) in 'passwd(5)' deprecated at line 103 in file t/pod/poderrs.t
 *** WARNING: ignoring leading whitespace in link at line 104 in file t/pod/poderrs.t
 *** WARNING: ignoring trailing whitespace in link at line 104 in file t/pod/poderrs.t
 *** ERROR: Spurious character(s) after =back at line 110 in file t/pod/poderrs.t
 *** WARNING: No items in =over (at line 118) / =back list at line 120 in file t/pod/poderrs.t
-*** WARNING: 2 unescaped <> in paragraph at line 122 in file t/pod/poderrs.t
 *** ERROR: unresolved internal link 'begin or begin' at line 90 in file t/pod/poderrs.t
 *** ERROR: unresolved internal link 'end with begin' at line 91 in file t/pod/poderrs.t
 *** ERROR: unresolved internal link 'OoPs' at line 92 in file t/pod/poderrs.t
 *** ERROR: unresolved internal link 'abc def' at line 96 in file t/pod/poderrs.t
-*** ERROR: unresolved internal link 'passwd(5)' at line 103 in file t/pod/poderrs.t
 *** WARNING: multiple occurence of link target 'oops' at line - in file t/pod/poderrs.t
-t/pod/poderrs.t has 25 pod syntax errors.
+t/pod/poderrs.t has 24 pod syntax errors.

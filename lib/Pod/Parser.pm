@@ -1079,7 +1079,7 @@ sub parse_from_filehandle {
                                      && (length $paragraph));
 
         ## Issue a warning about any non-empty blank lines
-        if (length($1) > 1 and $myOpts{'-warnings'} and ! $myData{_CUTTING}) {
+        if (length($1) > 0 and $myOpts{'-warnings'} and ! $myData{_CUTTING}) {
             my $errorsub = $self->errorsub();
             my $file = $self->input_file();
             my $errmsg = "*** WARNING: line containing nothing but whitespace".
