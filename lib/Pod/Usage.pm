@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's Pod::Text::pod2text() function
 # (with modifications).
 #
-# Copyright (C) 1994-1998 Tom Christiansen. All rights reserved.
+# Copyright (C) 1994-1999 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,7 +12,8 @@
 
 package Pod::Usage;
 
-$VERSION = 1.07;   ## Current version of this package
+use vars qw($VERSION);
+$VERSION = 1.08;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -358,7 +359,6 @@ with re-writing this manpage.
 
 #############################################################################
 
-use vars qw(@ISA @EXPORT $VERSION);
 use strict;
 #use diagnostics;
 use Carp;
@@ -366,6 +366,7 @@ use Exporter;
 use Pod::PlainText;
 use File::Spec;
 
+use vars qw(@ISA @EXPORT);
 @ISA = qw(Pod::PlainText);
 @EXPORT = qw(&pod2usage);
 
@@ -376,13 +377,13 @@ use File::Spec;
 ##---------------------------------
 
 sub pod2usage {
-    local($_) = @_ || "";
+    local($_) = shift || "";
     my %opts;
     ## Collect arguments
-    if (@_ > 1) {
+    if (@_ > 0) {
         ## Too many arguments - assume that this is a hash and
         ## the user forgot to pass a reference to it.
-        %opts = @_;
+        %opts = ($_, @_);
     }
     elsif (ref $_) {
         ## User passed a ref to a hash
@@ -430,8 +431,10 @@ sub pod2usage {
     ## Look up input file in path if it doesnt exist.
     unless ((ref $opts{"-input"}) || (-e $opts{"-input"})) {
         my ($dirname, $basename) = ('', $opts{"-input"});
-        my $pathsep = ($^O =~ /^(?:dos|os2|MSWin32)$/)  ?  ";"  :  ":";
-        my $pathspec = $opts{"-pathlist"} || $ENV{PATH};
+        my $pathsep = ($^O =~ /^(?:dos|os2|MSWin32)$/) ? ";"
+                            : (($^O eq 'MacOS') ? ',' :  ":");
+        my $pathspec = $opts{"-pathlist"} || $ENV{PATH} || $ENV{PERL5LIB};
+
         my @paths = (ref $pathspec) ? @$pathspec : split($pathsep, $pathspec);
         for $dirname (@paths) {
             $_ = File::Spec->catfile($dirname, $basename)  if length;

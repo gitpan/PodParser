@@ -12,11 +12,11 @@
 
     ***THIS TEXT IS IMMEDIATELY BEFORE THE INCLUDE***
 
-###### begin =include t/included.t #####
+###### begin =include included.t #####
     This is the text of the included file named "included.t". It
     should appear in the final pod document from pod2xxx
 
-###### end =include t/included.t #####
+###### end =include included.t #####
     ***THIS TEXT IS IMMEDIATELY AFTER THE INCLUDE***
 
     So how did we do???

@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's Pod::Text module
 # (with extensive modifications).
 #
-# Copyright (C) 1996-1998 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1999 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,7 +12,8 @@
 
 package Pod::Parser;
 
-$VERSION = 1.07;   ## Current version of this package
+use vars qw($VERSION);
+$VERSION = 1.08;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -148,13 +149,13 @@ how to intepret the commands and translate the result.
 
 #############################################################################
 
-use vars qw($VERSION @ISA);
+use vars qw(@ISA);
 use strict;
 #use diagnostics;
 use Pod::InputObjects;
 use Carp;
-use Exporter;
 use FileHandle;
+use Exporter;
 @ISA = qw(Exporter);
 
 ## These "variables" are used as local "glob aliases" for performance

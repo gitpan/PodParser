@@ -1,19 +1,51 @@
 package TestPodChecker;
 
-BEGIN { push @INC, '..' };
+BEGIN {
+   use File::Basename;
+   use File::Spec;
+   push @INC, '..';
+   my $THISDIR = dirname $0;
+   unshift @INC, $THISDIR;
+   require "testcmp.pl";
+   import TestCompare;
+   my $PARENTDIR = dirname $THISDIR;
+   push @INC, map { File::Spec->catfile($_, 'lib') } ($PARENTDIR, $THISDIR);
+}
+
 use Pod::Checker;
 use vars qw(@ISA @EXPORT $MYPKG);
 #use strict;
 #use diagnostics;
 use Carp;
 use Exporter;
-use File::Basename;
-use File::Spec;
-use File::Compare;
+#use File::Compare;
 
 @ISA = qw(Exporter);
-@EXPORT = qw(testpodchecker);
+@EXPORT = qw(&testpodchecker);
 $MYPKG = eval { (caller)[0] };
+
+sub stripname( $ ) {
+   local $_ = shift;
+   return /(\w[.\w]*)\s*$/ ? $1 : $_;
+}
+
+sub msgcmp( $ $ ) {
+   ## filter out platform-dependent aspects of error messages
+   my ($line1, $line2) = @_;
+   for ($line1, $line2) {
+      if ( /^#*\s*(\S.*?)\s+(?:has \d+\s*)?pod syntax (?:error|OK)/ ) {
+          my $fname = $1;
+          s/^#*\s*//  if ($^O eq 'MacOS');
+          s/^\s*\Q$fname\E/stripname($fname)/e;
+      }
+      elsif ( /^#*\s*\*+\s*(?:ERROR|Unterminated)/ ) {
+          s/^#*\s*//  if ($^O eq 'MacOS');
+          s/of file\s+(\S.*?)\s*$/"of file ".stripname($1)/e;
+          s/at\s+(\S.*?)\s+line/"at ".stripname($1)." line"/e;
+      }
+   }
+   return $line1 ne $line2;
+}
 
 sub testpodcheck( @ ) {
    my %args = @_;
@@ -33,7 +65,7 @@ sub testpodcheck( @ ) {
    print "+ Running podchecker for '$testname'...\n";
    ## Compare the output against the expected result
    podchecker($infile, $outfile);
-   if ( File::Compare::cmp($outfile, $cmpfile) ) {
+   if ( testcmp({'-cmplines' => \&msgcmp}, $outfile, $cmpfile) ) {
        $different = "$outfile is different from $cmpfile";
    }
    else {
@@ -93,3 +125,5 @@ sub testpodchecker( @ ) {
    }
    return  $passes;
 }
+
+1;

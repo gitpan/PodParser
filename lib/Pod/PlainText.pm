@@ -4,7 +4,7 @@
 # Derived from Tom Christiansen's Pod::PlainText module
 # (with extensive modifications).
 #
-# Copyright (C) 1994-1998 Tom Christiansen. All rights reserved.
+# Copyright (C) 1994-1999 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,7 +12,8 @@
 
 package Pod::PlainText;
 
-$VERSION = 1.07;   ## Current version of this package
+use vars qw($VERSION);
+$VERSION = 1.08;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -85,13 +86,14 @@ Brad Appleton E<lt>bradapp@enteract.comE<gt>
 
 #############################################################################
 
-use vars qw(@ISA @EXPORT $VERSION %HTML_Escapes);
 use strict;
 #use diagnostics;
 use Carp;
 use Exporter;
 use Pod::Select;
 use Term::Cap;
+use vars qw(@ISA @EXPORT %HTML_Escapes);
+
 @ISA = qw(Exporter Pod::Select);
 @EXPORT = qw(&pod2plaintext);
 
@@ -172,8 +174,14 @@ use Term::Cap;
 ## Function definitions begin here
 ##---------------------------------
 
-sub version {
-    return  $VERSION;
+   ## Try to find #columns for the tty
+my %NotUnix = map {($_ => 1)} qw(MacOS MSWin32 VMS MVS);
+sub get_screen {
+    ((defined $ENV{TERMCAP}) && ($ENV{TERMCAP} =~ /co#(\d+)/)[0])
+    or ((defined $ENV{COLUMNS}) && $ENV{COLUMNS})
+    or (!$NotUnix{$^O} && (`stty -a 2>/dev/null` =~ /(\d+) columns/)[0])
+    or 72;
+
 }
 
 sub pod2plaintext {
@@ -453,12 +461,7 @@ sub begin_pod {
         $self->{FONTMAP}->{NORM} = $term->{'_me'};
     }
    
-    $self->{SCREEN} =
-                ((defined $ENV{TERMCAP}) && ($ENV{TERMCAP} =~ /co#(\d+)/)[0])
-                || ((defined $ENV{COLUMNS}) && $ENV{COLUMNS})
-                || (`stty -a 2>/dev/null` =~ /(\d+) columns/)[0]
-                || 72;
-   
+    $self->{SCREEN}     = &get_screen;
     $self->{FANCY}      = 0;
     $self->{DEF_INDENT} = 4;
     $self->{INDENTS}    = [];

@@ -1,23 +1,34 @@
 package TestPodIncPlainText;
 
-BEGIN { push @INC, '..' };
+BEGIN {
+   use File::Basename;
+   use File::Spec;
+   push @INC, '..';
+   my $THISDIR = dirname $0;
+   unshift @INC, $THISDIR;
+   require "testcmp.pl";
+   import TestCompare;
+   my $PARENTDIR = dirname $THISDIR;
+   push @INC, map { File::Spec->catfile($_, 'lib') } ($PARENTDIR, $THISDIR);
+}
+
 use Pod::PlainText;
 use vars qw(@ISA @EXPORT $MYPKG);
 #use strict;
 #use diagnostics;
 use Carp;
 use Exporter;
-use File::Basename;
-use File::Spec;
-use File::Compare;
+#use File::Compare;
 
 @ISA = qw(Pod::PlainText);
-@EXPORT = qw(testpodplaintext);
+@EXPORT = qw(&testpodplaintext);
 $MYPKG = eval { (caller)[0] };
 
 ## Hardcode settings for TERMCAP and COLUMNS so we can try to get
 ## reproducible results between environments
 @ENV{qw(TERMCAP COLUMNS)} = ('co=72:do=^J', 72);
+
+sub catfile(@) { File::Spec->catfile(@_); }
 
 ## Find the path to the file to =include
 sub findinclude {
@@ -29,17 +40,24 @@ sub findinclude {
 
     ## Need to search for it. Look in the following directories ...
     ##   1. the directory containing this pod file
-    my $thispoddir  = dirname $self->input_file;
+    my $thispoddir = dirname $self->input_file;
     ##   2. the parent directory of the above
-    my $parentdir   = ($thispoddir eq '.') ? '..' : dirname $thispoddir;
-    ##   3. the 'Pod' subdirectory of the above (sibling of $thispoddir)
-    my $podsibdir   = File::Spec->catfile($parentdir, 'Pod');
-    ##   4. the 'Pod' subdirectory of this pod's directory
-    my $podsubdir   = File::Spec->catfile($thispoddir, 'Pod');
+    my $parentdir  = ($thispoddir eq '.') ? '..' : dirname $thispoddir;
+    ##   3. any Pod/ or scripts/ subdirectory of these two
+    my @dirs = ();
+    for ($thispoddir, $parentdir) {
+       my $dir = $_;
+       for ( qw(scripts lib) ) {
+          push @dirs, $dir, catfile($dir, $_),
+                            catfile($dir, 'Pod'),
+                            catfile($dir, $_, 'Pod');
+       }
+    }
+    my %dirs = (map { ($_ => 1) } @dirs);
+    my @podincdirs = (sort keys %dirs);
 
-    my @podincdirs  = ($thispoddir, $parentdir, $podsibdir, $podsubdir);
     for (@podincdirs) {
-       my $incfile = File::Spec->catfile($_, $incname);
+       my $incfile = catfile($_, $incname);
        return $incfile  if (-r $incfile);
     }
     warn("*** Can't find =include file $incname in @podincdirs\n");
@@ -64,9 +82,10 @@ sub command {
         return;
     }
     my $incfile  = $self->findinclude(shift @incargs)  or  return;
-    print $out_fh "###### begin =include $incfile #####\n"  if ($incdebug);
+    my $incbase  = basename $incfile;
+    print $out_fh "###### begin =include $incbase #####\n"  if ($incdebug);
     $self->parse_from_file( {-cutting => 1}, $incfile );
-    print $out_fh "###### end =include $incfile #####\n"    if ($incdebug);
+    print $out_fh "###### end =include $incbase #####\n"    if ($incdebug);
 }
 
 sub podinc2plaintext( $ $ ) {
@@ -94,7 +113,7 @@ sub testpodinc2plaintext( @ ) {
    print "+ Running testpodinc2plaintext for '$testname'...\n";
    ## Compare the output against the expected result
    podinc2plaintext($infile, $outfile);
-   if ( File::Compare::cmp($outfile, $cmpfile) ) {
+   if ( testcmp($outfile, $cmpfile) ) {
        $different = "$outfile is different from $cmpfile";
    }
    else {
@@ -154,3 +173,5 @@ sub testpodplaintext( @ ) {
    }
    return  $passes;
 }
+
+1;

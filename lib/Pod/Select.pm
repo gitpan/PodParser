@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's pod2text() function
 # (with extensive modifications).
 #
-# Copyright (C) 1996-1998 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1999 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,7 +12,8 @@
 
 package Pod::Select;
 
-$VERSION = 1.07;   ## Current version of this package
+use vars qw($VERSION);
+$VERSION = 1.08;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -144,15 +145,99 @@ C</!.+>
 
 =back 
 
+=begin _NOT_IMPLEMENTED_
+
+=head1 RANGE SPECIFICATIONS
+
+B<podselect()> and B<Pod::Select::select()> may be given one or more
+"range specifications" to restrict the text processed to only the
+desired ranges of paragraphs in the desired set of sections. A range
+specification is a string containing a single Perl-style regular
+expression (a regex), or else two Perl-style regular expressions
+(regexs) separated by a ".." (Perl's "range" operator is "..").
+The regexs in a range specification are delimited by forward slashes
+("/").  If you need to use a forward slash literally within a regex you
+can escape it with a backslash ("\/").
+
+The formal syntax of a range specification is:
+
+=over 4
+
+=item
+
+/I<start-range-regex>/[../I<end-range-regex>/]
+
+=back
+
+Where each the item inside square brackets (the ".." followed by the
+end-range-regex) is optional. Each "range-regex" is of the form:
+
+    =cmd-expr text-expr
+
+Where I<cmd-expr> is intended to match the name of one or more POD
+commands, and I<text-expr> is intended to match the paragraph text for
+the command. If a range-regex is supposed to match a POD command, then
+the first character of the regex (the one after the initial '/')
+absolutely I<must> be an single '=' character; it may not be anything
+else (not even a regex meta-character) if it is supposed to match
+against the name of a POD command.
+
+If no I<=cmd-expr> is given then the text-expr will be matched against
+plain textblocks unless it is preceded by a space, in which case it is
+matched against verbatim text-blocks. If no I<text-expr> is given then
+only the command-portion of the paragraph is matched against.
+
+Note that these two expressions are each implicitly anchored. This
+means that when matching against the command-name, there will be an
+implicit '^' and '$' around the given I<=cmd-expr>; and when matching
+against the paragraph text there will be an implicit '\A' and '\Z'
+around the given I<text-expr>.
+
+Unlike with section-specs, the '!' character does I<not> have any special
+meaning (negation or otherwise) at the beginning of a range-spec!
+
+Some example range specifications follow.
+
+=over 4
+
+=item
+Match all C<=for html> paragraphs:
+
+C</=for html/>
+
+=item
+Match all paragraphs between C<=begin html> and C<=end html>
+(note that this will I<not> work correctly if such sections
+are nested):
+
+C</=begin html/../=end html/>
+
+=item
+Match all paragraphs between the given C<=item> name until the end of the
+current section:
+
+C</=item mine/../=head\d/>
+
+=item
+Match all paragraphs between the given C<=item> until the next item, or
+until the end of the itemized list (note that this will I<not> work as
+desired if the item contains an itemized list nested within it):
+
+C</=item mine/../=(item|back)/>
+
+=back 
+
+=end _NOT_IMPLEMENTED_
+
 =cut
 
 #############################################################################
 
-use vars qw(@ISA @EXPORT $VERSION $MAX_HEADING_LEVEL);
 use strict;
 #use diagnostics;
 use Carp;
 use Pod::Parser 1.04;
+use vars qw(@ISA @EXPORT $MAX_HEADING_LEVEL);
 
 @ISA = qw(Pod::Parser);
 @EXPORT = qw(&podselect);
@@ -254,6 +339,8 @@ sub select {
     local *myData = $self;
     local $_;
 
+### NEED TO DISCERN A SECTION-SPEC FROM A RANGE-SPEC (look for m{^/.+/$}?)
+
     ##---------------------------------------------------------------------
     ## The following is a blatant hack for backward compatibility, and for
     ## implementing add_selection(). If the *first* *argument* is the
@@ -342,7 +429,7 @@ there are no explictly selected/deselected sections).
 
 The arguments C<$heading1>, C<$heading2>, etc. are the heading titles of
 the corresponding sections, subsections, etc. to try and match.  If
-C<$headingN> is ommitted then it defaults to the current corresponding
+C<$headingN> is omitted then it defaults to the current corresponding
 section heading title in the input.
 
 This method should I<not> normally be overridden by subclasses.
@@ -456,17 +543,29 @@ processed as follows:
 
 =over 4
 
-=item C<-output>
+=item B<-output>
 
 A string corresponding to the desired output file (or ">&STDOUT"
 or ">&STDERR"). The default is to use standard output.
 
-=item C<-sections>
+=item B<-sections>
 
 A reference to an array of sections specifications (as described in
 L<"SECTION SPECIFICATIONS">) which indicate the desired set of POD
 sections and subsections to be selected from input. If no section
 specifications are given, then all sections of the PODs are used.
+
+=begin _NOT_IMPLEMENTED_
+
+=item B<-ranges>
+
+A reference to an array of range specifications (as described in
+L<"RANGE SPECIFICATIONS">) which indicate the desired range of POD
+paragraphs to be selected from the desired input sections. If no range
+specifications are given, then all paragraphs of the desired sections
+are used.
+
+=end _NOT_IMPLEMENTED_
 
 =back
 
@@ -479,7 +578,8 @@ filenames are given).
 
 sub podselect {
     my(@argv) = @_;
-    my $pod_parser = new Pod::Select;
+    my %defaults   = ();
+    my $pod_parser = new Pod::Select(%defaults);
     my $num_inputs = 0;
     my $output = ">&STDOUT";
     my %opts = ();
@@ -487,7 +587,7 @@ sub podselect {
     for (@argv) {
         if (ref($_)) {
             next unless (ref($_) eq 'HASH');
-            %opts = %{$_};
+            %opts = (%defaults, %{$_});
 
             ##-------------------------------------------------------------
             ## Need this for backward compatibility since we formerly used
@@ -496,17 +596,25 @@ sub podselect {
             ## to be uppercase keywords)
             ##-------------------------------------------------------------
             %opts = map {
-                my $val = $opts{$_};
-                s/^(?=\w)/-/;
-                /^-se[cl]/i  and  $_ = '-sections';
-                lc($_) => $val;    
+                my ($key, $val) = (lc $_, $opts{$_});
+                $key =~ s/^(?=\w)/-/;
+                $key =~ /^-se[cl]/  and  $key  = '-sections';
+                #! $key eq '-range'    and  $key .= 's';
+                ($key => $val);    
             } (keys %opts);
 
             ## Process the options
-            (exists $opts{-output})  and  $output = $opts{-output};
-            $pod_parser->select(@{ $opts{-sections} })
-                if ( (defined $opts{-sections})
-                     && ((ref $opts{-sections}) eq 'ARRAY') );
+            (exists $opts{'-output'})  and  $output = $opts{'-output'};
+
+            ## Select the desired sections
+            $pod_parser->select(@{ $opts{'-sections'} })
+                if ( (defined $opts{'-sections'})
+                     && ((ref $opts{'-sections'}) eq 'ARRAY') );
+
+            #! ## Select the desired paragraph ranges
+            #! $pod_parser->select(@{ $opts{'-ranges'} })
+            #!     if ( (defined $opts{'-ranges'})
+            #!          && ((ref $opts{'-ranges'}) eq 'ARRAY') );
         }
         else {
             $pod_parser->parse_from_file($_, $output);

@@ -173,7 +173,7 @@ match_section()
 
     The arguments `$heading1', `$heading2', etc. are the heading
     titles of the corresponding sections, subsections, etc. to try
-    and match. If `$headingN' is ommitted then it defaults to the
+    and match. If `$headingN' is omitted then it defaults to the
     current corresponding section heading title in the input.
 
     This method should *not* normally be overridden by subclasses.
@@ -209,12 +209,12 @@ podselect()
     (associative array) then the values with the following keys are
     processed as follows:
 
-    `-output'
+    -output
         A string corresponding to the desired output file (or
         ">&STDOUT" or ">&STDERR"). The default is to use standard
         output.
 
-    `-sections'
+    -sections
         A reference to an array of sections specifications (as
         described in the section on "SECTION SPECIFICATIONS") which
         indicate the desired set of POD sections and subsections to

@@ -30,7 +30,7 @@ $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
 WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
-    VERSION_FROM => 'Parser.pm',  ## Finds distribution $VERSION
+    VERSION_FROM => 'lib/Pod/Parser.pm',  ## Finds distribution $VERSION
     realclean    => { FILES => "@SCRIPTS" },
     ($] < 5.005 ?     ## Need File::Spec if this is 5.004 or earlier
        (PREREQ_PM  => {'File::Spec' => 0}) : ()),

@@ -4,19 +4,20 @@ MANIFEST     -- This shipping list
 TODO         -- Tentative "to do" list for future development
 Makefile.PL  -- Perl Makefile template
 
-InputObjects.pm -- Input objects for Pod::Parser
-Parser.pm    -- The Pod::Parser module source
-Select.pm    -- The Pod::Select module source
-PlainText.pm -- The Pod::PlainText module source
-Usage.pm     -- The Pod::Usage module source
-Checker.pm   -- The Pod::Checker module source
+lib/Pod/InputObjects.pm -- Input objects for Pod::Parser
+lib/Pod/Parser.pm    -- The Pod::Parser module source
+lib/Pod/Select.pm    -- The Pod::Select module source
+lib/Pod/PlainText.pm -- The Pod::PlainText module source
+lib/Pod/Usage.pm     -- The Pod::Usage module source
+lib/Pod/Checker.pm   -- The Pod::Checker module source
 
-podselect.PL -- Script to print selected sections of pod docs in raw pod
-                format (a command-line interface to podselect()).
-pod2usage.PL -- Script to print usage from a file's embeded pod docs
-                (a command-line interface to pod2usage()).
-podchecker.PL -- Script to check syntax of pods in a file
+scripts/podselect.PL -- Script to print selected sections of pod docs in raw
+                        pod format (a command-line interface to podselect()).
+scripts/pod2usage.PL -- Script to print usage from a file's embeded pod docs
+                        (a command-line interface to pod2usage()).
+scripts/podchecker.PL -- Script to check syntax of pods in a file
 
+t/testcmp.pl      -- module used to compare output against expected results
 t/testp2pt.pl     -- module used to test Pod::PlainText for a given file
 t/testpchk.pl     -- module used to test Pod::Checker for a given file
 t/InputObjects.t  -- test input file for processing InputObjects.pm

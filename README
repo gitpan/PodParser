@@ -38,23 +38,22 @@
    Please see the POD documentation for this module and Pod::Parser for
    more details (embedded in the file "PlainText.pm").
 
-   Pod::PlainText and pod2plaintext *can* peacefully co-exist with the
-   the current Pod::Text and pod2text of your perl distribution. However,
-   IF YOU WANT TO PHYSICALLY REPLACE Pod::Text on your system you can do
-   this by making the following changes:
+   Pod::PlainText *can* peacefully co-exist with the current Pod::Text
+   (and pod2text) of your perl distribution. However, IF YOU WANT TO
+   PHYSICALLY REPLACE Pod::Text on your system you can do this by making
+   the following changes:
 
-      - Replace 'PlainText' with 'Text' and 'plaintext' with 'text'
-        in all *.pm and *.PL files in the PodParser package.
+      - Replace 'PlainText' with 'Text' in all *.pm and *.PL files in the
+        PodParser package (dont forget the 't/' subdirectory).
 
-      - Rename 'PlainText.pm' to 'Text.pm' and 'pod2plaintext.PL' to
-        'pod2text.PL'.
+      - Rename 'PlainText.pm' to 'Text.pm'.
 
       - You should probably copy the existing Pod::Text and pod2text files
         in your perl distribution to a new name and/or location before
         overwriting them when you perform 'make install'
  
    YOU PROBABLY DO NOT WANT TO DO THIS!!!! Pod::PlainText is not yet
-   verified to produce equivalent output to Pod::text.
+   verified to produce equivalent output to Pod::Text.
 
  Pod::InputObjects
  -----------------
@@ -93,13 +92,15 @@
 
  COPY/REUSE POLICY
  =================
- Copyright (C) 1996-1998 by Tom Christiansen. All rights reserved.
+ Copyright (C) 1996-1999 by Tom Christiansen. All rights reserved.
 
  PodParser is free software; you can redistribute it and/or modify it
  under the terms of the Artistic License distributed with Perl version
  5.000 or (at your option) any later version. Please refer to the
  Artistic License that came with your Perl distribution for more
- details.
+ details. If your version of Perl was not distributed under the
+ terms of the Artistic License, than you may distribute PodParser
+ under the same terms as Perl itself.
 
  The Artistic License should have been included in your distribution of
  Perl. It resides in the file named "Artistic" at the top-level of the

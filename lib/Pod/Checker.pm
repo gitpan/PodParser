@@ -4,7 +4,7 @@
 # Based on Tom Christiansen's Pod::Text::pod2text() function
 # (with modifications).
 #
-# Copyright (C) 1994-1998 Tom Christiansen. All rights reserved.
+# Copyright (C) 1994-1999 Tom Christiansen. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -12,7 +12,8 @@
 
 package Pod::Checker;
 
-$VERSION = 1.07;   ## Current version of this package
+use vars qw($VERSION);
+$VERSION = 1.08;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -66,7 +67,7 @@ use Carp;
 use Exporter;
 use Pod::Parser;
 
-use vars qw(@ISA @EXPORT $VERSION);
+use vars qw(@ISA @EXPORT);
 @ISA = qw(Pod::Parser);
 @EXPORT = qw(&podchecker);
 

@@ -7,7 +7,7 @@ SYNOPSIS
         use Pod::InputObjects;
 
 REQUIRES
-    perl5.004, Exporter, Carp
+    perl5.004, Carp
 
 EXPORTS
     Nothing.

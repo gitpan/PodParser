@@ -1,5 +1,19 @@
 
- 16-Jan-1998           Brad Appleton                   <bradapp@enteract.com>
+ 01-Mar-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.08
+ + Fixed a bug in obtaining options-hash in pod2usage()
+ + Modified test suite & tools to run as expected on more platforms
+   (the .t scripts now do a zero-exit if $ENV{ACTIVE_HARNESS} is set)
+ + Some more portability fixes for searching file-paths in Pod::Usage
+   (thanks to Chris Nandor)
+ + Changed the distribution directory structure a little bit. Instead
+   of all the scripts and modules at the top level directory, the scripts
+   are now in the 'scripts/' subdirectory and the modules are now in the
+   'lib/Pod/' subdirectory.
+
+
+ 16-Jan-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.07
  + Added Pod::Checker and podchecker.PL
