@@ -1,3 +1,19 @@
+ 04-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
+                       Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.093
+ + added mandatory warning for non-empty blank lines matching /^\s+$/
+ + got rid of special handling of '=>' and '=>' inside C<..> and instead
+   implemented the more general rules posted by Larry Wall on P5P allowing
+   /[A-Z]<...>/ and /[A-Z]<[<:]\s+...\s+[:>]>/ to deal with things like
+   embedded '->' and '=>' using whitespace, as in: C<< <=> >> and I<< <> >>.
+ + added proposals by Wolfgang Laun to Pod::Checker (more errors and 
+   warnings):
+    - removed qr// so that code runs with Perl 5.004 
+    - POD files can include '.' in the name.
+    - L<DBI(3)> now causes an error, correct is: L<DBI>
+
+
  03-Jan-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.092

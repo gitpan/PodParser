@@ -26,24 +26,15 @@
 
  * Implement -ranges "option" to Pod::Select & podselect
 
- * Implement more of Pod::Checker
 
  LONG TERM
  ---------
- * Try and get pod2html and pod2man and the other pod2xxx translators to
-   use Pod::Parser (so they will all use the same uniform and consistent
-   POD parsing engine).
 
  * Maybe create a Pod::Compiler class that reads a POD and returns a
    list of Pod::Paragraphs objects?
 
  * Make changes necessary to accommodate Kenneth Albanowski's Pod::Simplify
    module so that it may use Pod::Parser.
-
- * Some kind of Pod::ParseUtils would be good for help with parsing of
-   the arguments to various commands and interior-sequences (e.g.,
-   Nick's Pod::LinkParse). This may overlap with the above regarding
-   Ken's Pod::Simplify.
 
  * See about providing the ability (perhaps via constructor options) to turn
    off certain unwanted Pod::Parser features in order to improve performance
@@ -56,4 +47,12 @@
    as a constructor argument to Pod::Parser.  Perhaps it might be possible
    to pass the callback method an array of lines or of paragraphs (rather
    than one input block at a time) if certain options are specified.
+
+Comments by Wolfgang Laun wrt Pod::Checker:
+
+ * =over/=back without intervening =item produces a warning even when
+   there are pararaphs in between. But this could be used to produce
+   indented paragraphs. Restrict warning to completely empty lists?
+
+ * A =head2 without preceding =head1 might deserve a warning.
 

@@ -37,9 +37,9 @@ SYNOPSIS
         sub interior_sequence { 
             my ($parser, $seq_command, $seq_argument) = @_;
             ## Expand an interior sequence; sample actions might be:
-            return "*$seq_argument*"     if ($seq_command = 'B');
-            return "`$seq_argument'"     if ($seq_command = 'C');
-            return "_${seq_argument}_'"  if ($seq_command = 'I');
+            return "*$seq_argument*"     if ($seq_command eq 'B');
+            return "`$seq_argument'"     if ($seq_command eq 'C');
+            return "_${seq_argument}_'"  if ($seq_command eq 'I');
             ## ... other sequence commands and their resulting text
         }
 
@@ -108,8 +108,8 @@ QUICK OVERVIEW
     of the input parsing for you and leave you free to worry about how to
     intepret the commands and translate the result.
 
-    Note that all we have described here in this quick overview overview is
-    the simplest most striaghtforward use of Pod::Parser to do stream-based
+    Note that all we have described here in this quick overview is the
+    simplest most straightforward use of Pod::Parser to do stream-based
     parsing. It is also possible to use the Pod::Parser::parse_text function
     to do more sophisticated tree-based parsing. See the section on
     "TREE-BASED PARSING".
@@ -127,7 +127,7 @@ PARSING OPTIONS
        POD-format documentation are not made available to the caller (not
        even using preprocess_paragraph()). Setting this option to a
        non-empty, non-zero value will allow preprocess_paragraph() to see
-       non-POD sectioins of the input as well as POD sections. The cutting()
+       non-POD sections of the input as well as POD sections. The cutting()
        method can be used to determine if the corresponding paragraph is a
        POD paragraph, or some other input paragraph.
 
@@ -376,18 +376,20 @@ preprocess_paragraph()
     If the empty string is returned or an undefined value is returned, then
     the given `$text' is ignored (not processed).
 
-    This method is invoked after gathering up all thelines in a paragraph
-    but before trying to further parse or interpret them. After
-    preprocess_paragraph() returns, the current cutting state (which is
-    returned by `$self->cutting()') is examined. If it evaluates to false
-    then input text (including the given `$text') is cut (not processed)
-    until the next POD directive is encountered.
+    This method is invoked after gathering up all the lines in a paragraph
+    and after determining the cutting state of the paragraph, but before
+    trying to further parse or interpret them. After preprocess_paragraph()
+    returns, the current cutting state (which is returned by
+    `$self->cutting()') is examined. If it evaluates to true then input text
+    (including the given `$text') is cut (not processed) until the next POD
+    directive is encountered.
 
     Please note that the preprocess_line() method is invoked *before* the
     preprocess_paragraph() method. After all (possibly preprocessed) lines
-    in a paragraph have been assembled together and it has been determined
-    that the paragraph is part of the POD documentation from one of the
-    selected sections, then preprocess_paragraph() is invoked.
+    in a paragraph have been assembled together and either it has been
+    determined that the paragraph is part of the POD documentation from one
+    of the selected sections or the `-want_nonPODs' option is true, then
+    preprocess_paragraph() is invoked.
 
     The base class implementation of this method returns the given text.
 

@@ -1,7 +1,7 @@
 # Pod::PlainText -- Convert POD data to formatted ASCII text.
 # $Id: Text.pm,v 2.1 1999/09/20 11:53:33 eagle Exp $
 #
-# Copyright 1999 by Russ Allbery <rra@stanford.edu>
+# Copyright 1999-2000 by Russ Allbery <rra@stanford.edu>
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
@@ -44,7 +44,7 @@ use vars qw(@ISA %ESCAPES $VERSION);
     'lt'        =>    '<',      # left chevron, less-than
     'gt'        =>    '>',      # right chevron, greater-than
     'quot'      =>    '"',      # double quote
-                                 
+
     "Aacute"    =>    "\xC1",   # capital A, acute accent
     "aacute"    =>    "\xE1",   # small a, acute accent
     "Acirc"     =>    "\xC2",   # capital A, circumflex accent
@@ -107,7 +107,7 @@ use vars qw(@ISA %ESCAPES $VERSION);
     "Yacute"    =>    "\xDD",   # capital Y, acute accent
     "yacute"    =>    "\xFD",   # small y, acute accent
     "yuml"      =>    "\xFF",   # small y, dieresis or umlaut mark
-                                  
+
     "lchevron"  =>    "\xAB",   # left chevron (double less than)
     "rchevron"  =>    "\xBB",   # right chevron (double greater than)
 );

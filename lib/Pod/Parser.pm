@@ -1,7 +1,7 @@
 #############################################################################
 # Pod/Parser.pm -- package which defines a base class for parsing POD docs.
 #
-# Copyright (C) 1996-1999 by Bradford Appleton. All rights reserved.
+# Copyright (C) 1996-2000 by Bradford Appleton. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -10,7 +10,7 @@
 package Pod::Parser;
 
 use vars qw($VERSION);
-$VERSION = 1.090;  ## Current version of this package
+$VERSION = 1.093;  ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -55,9 +55,9 @@ Pod::Parser - base class for creating POD filters and translators
     sub interior_sequence { 
         my ($parser, $seq_command, $seq_argument) = @_;
         ## Expand an interior sequence; sample actions might be:
-        return "*$seq_argument*"     if ($seq_command = 'B');
-        return "`$seq_argument'"     if ($seq_command = 'C');
-        return "_${seq_argument}_'"  if ($seq_command = 'I');
+        return "*$seq_argument*"     if ($seq_command eq 'B');
+        return "`$seq_argument'"     if ($seq_command eq 'C');
+        return "_${seq_argument}_'"  if ($seq_command eq 'I');
         ## ... other sequence commands and their resulting text
     }
 
@@ -142,8 +142,8 @@ For the most part, the B<Pod::Parser> base class should be able to
 do most of the input parsing for you and leave you free to worry about
 how to intepret the commands and translate the result.
 
-Note that all we have described here in this quick overview overview is
-the simplest most striaghtforward use of B<Pod::Parser> to do stream-based
+Note that all we have described here in this quick overview is the
+simplest most straightforward use of B<Pod::Parser> to do stream-based
 parsing. It is also possible to use the B<Pod::Parser::parse_text> function
 to do more sophisticated tree-based parsing. See L<"TREE-BASED PARSING">.
 
@@ -164,7 +164,7 @@ the POD sections of the input. Input paragraphs that are not part
 of the POD-format documentation are not made available to the caller
 (not even using B<preprocess_paragraph()>). Setting this option to a
 non-empty, non-zero value will allow B<preprocess_paragraph()> to see
-non-POD sectioins of the input as well as POD sections. The B<cutting()>
+non-POD sections of the input as well as POD sections. The B<cutting()>
 method can be used to determine if the corresponding paragraph is a POD
 paragraph, or some other input paragraph.
 
@@ -588,18 +588,20 @@ The value returned should correspond to the new text to use in its
 place If the empty string is returned or an undefined value is
 returned, then the given C<$text> is ignored (not processed).
 
-This method is invoked after gathering up all thelines in a paragraph
+This method is invoked after gathering up all the lines in a paragraph
+and after determining the cutting state of the paragraph,
 but before trying to further parse or interpret them. After
 B<preprocess_paragraph()> returns, the current cutting state (which
 is returned by C<$self-E<gt>cutting()>) is examined. If it evaluates
-to false then input text (including the given C<$text>) is cut (not
+to true then input text (including the given C<$text>) is cut (not
 processed) until the next POD directive is encountered.
 
 Please note that the B<preprocess_line()> method is invoked I<before>
 the B<preprocess_paragraph()> method. After all (possibly preprocessed)
-lines in a paragraph have been assembled together and it has been
+lines in a paragraph have been assembled together and either it has been
 determined that the paragraph is part of the POD documentation from one
-of the selected sections, then B<preprocess_paragraph()> is invoked.
+of the selected sections or the C<-want_nonPODs> option is true,
+then B<preprocess_paragraph()> is invoked.
 
 The base class implementation of this method returns the given text.
 
@@ -717,13 +719,6 @@ is a reference to the parse-tree object.
 
 =cut
 
-## This global regex is used to see if the text before a '>' inside
-## an interior sequence looks like '-' or '=', but not '--', '==',
-## '!=', '$-', '$=' or <<op>>=
-use vars qw( $ARROW_RE );
-$ARROW_RE = join('', qw{ (?: [^-+*/=!&|%^x.<>$]= | [^-$]- )$ });
-#$ARROW_RE = qr/(?:[^-+*/=!&|%^x.<>$]+=|[^-$]+-)$/;  ## 5.005+ only!
-
 sub parse_text {
     my $self = shift;
     local $_ = '';
@@ -737,7 +732,7 @@ sub parse_text {
     my $text = shift;
     my $line = shift;
     my $file = $self->input_file();
-    my ($cmd, $prev)  = ('', '');
+    my $cmd  = "";
 
     ## Convert method calls into closures, for our convenience
     my $xseq_sub   = $expand_seq;
@@ -756,7 +751,7 @@ sub parse_text {
     ref $xseq_sub    or  $xseq_sub   = sub { shift()->$expand_seq(@_) };
     ref $xtext_sub   or  $xtext_sub  = sub { shift()->$expand_text(@_) };
     ref $xptree_sub  or  $xptree_sub = sub { shift()->$expand_ptree(@_) };
-    
+
     ## Keep track of the "current" interior sequence, and maintain a stack
     ## of "in progress" sequences.
     ##
@@ -768,52 +763,82 @@ sub parse_text {
     ##
     my $seq       = Pod::ParseTree->new();
     my @seq_stack = ($seq);
+    my ($ldelim, $rdelim) = ('', '');
 
-    ## Iterate over all sequence starts/stops, newlines, & text
-    ## (NOTE: split with capturing parens keeps the delimiters)
+    ## Iterate over all sequence starts text (NOTE: split with
+    ## capturing parens keeps the delimiters)
     $_ = $text;
-    for ( split /([A-Z]<|>|\n)/ ) {
-        ## Keep track of line count
-        ++$line  if ($_ eq "\n");
+    my @tokens = split /([A-Z]<(?:<+\s+)?)/;
+    while ( @tokens ) {
+        $_ = shift @tokens;
         ## Look for the beginning of a sequence
-        if ( /^([A-Z])(<)$/ ) {
+        if ( /^([A-Z])(<(?:<+\s+)?)$/ ) {
             ## Push a new sequence onto the stack of those "in-progress"
+            ($cmd, $ldelim) = ($1, $2);
             $seq = Pod::InteriorSequence->new(
-                       -name   => ($cmd = $1),
-                       -ldelim => $2,     -rdelim => '',
-                       -file   => $file,  -line   => $line
+                       -name   => $cmd,
+                       -ldelim => $ldelim,  -rdelim => '',
+                       -file   => $file,    -line   => $line
                    );
+            $ldelim =~ s/\s+$//, ($rdelim = $ldelim) =~ tr/</>/;
             (@seq_stack > 1)  and  $seq->nested($seq_stack[-1]);
             push @seq_stack, $seq;
         }
-        ## Look for sequence ending (preclude '->' and '=>' inside C<...>)
-        elsif ( (@seq_stack > 1)  and
-                /^>$/ and ($cmd ne 'C' or $prev !~ /$ARROW_RE/o) )
-        {
-            ## End of current sequence, record terminating delimiter
-            $seq->rdelim($_);
-            ## Pop it off the stack of "in progress" sequences
-            pop @seq_stack;
-            ## Append result to its parent in current parse tree
-            $seq_stack[-1]->append($expand_seq ? &$xseq_sub($self,$seq) : $seq);
-            ## Remember the current cmd-name
-            $cmd = (@seq_stack > 1) ? $seq_stack[-1]->name : '';
+        ## Look for sequence ending
+        elsif ( @seq_stack > 1 ) {
+            ## Make sure we match the right kind of closing delimiter
+            my ($seq_end, $post_seq) = ("", "");
+            if ( ($ldelim eq '<'   and  /\A(.*?)(>)/s)
+                 or  /\A(.*?)(\s+$rdelim)/s )
+            {
+                ## Found end-of-sequence, capture the interior and the
+                ## closing the delimiter, and put the rest back on the
+                ## token-list
+                $post_seq = substr($_, length($1) + length($2));
+                ($_, $seq_end) = ($1, $2);
+                (length $post_seq)  and  unshift @tokens, $post_seq;
+            }
+            if (length) {
+                ## In the middle of a sequence, append this text to it, and
+                ## dont forget to "expand" it if that's what the caller wanted
+                $seq->append($expand_text ? &$xtext_sub($self,$_,$seq) : $_);
+                $_ .= $seq_end;
+            }
+            if (length $seq_end) {
+                ## End of current sequence, record terminating delimiter
+                $seq->rdelim($seq_end);
+                ## Pop it off the stack of "in progress" sequences
+                pop @seq_stack;
+                ## Append result to its parent in current parse tree
+                $seq_stack[-1]->append($expand_seq ? &$xseq_sub($self,$seq)
+                                                   : $seq);
+                ## Remember the current cmd-name and left-delimiter
+                $cmd = (@seq_stack > 1) ? $seq_stack[-1]->name : '';
+                $ldelim = (@seq_stack > 1) ? $seq_stack[-1]->ldelim : '';
+                $ldelim =~ s/\s+$//, ($rdelim = $ldelim) =~ tr/</>/;
+            }
         }
         elsif (length) {
             ## In the middle of a sequence, append this text to it, and
             ## dont forget to "expand" it if that's what the caller wanted
             $seq->append($expand_text ? &$xtext_sub($self,$_,$seq) : $_);
         }
-        ## Remember the "current" sequence and the previously seen token
-        ($seq, $prev) = ( $seq_stack[-1], $_ );
+        ## Keep track of line count
+        $line += tr/\n//;
+        ## Remember the "current" sequence
+        $seq = $seq_stack[-1];
     }
 
     ## Handle unterminated sequences
     my $errorsub = (@seq_stack > 1) ? $self->errorsub() : undef;
     while (@seq_stack > 1) {
        ($cmd, $file, $line) = ($seq->name, $seq->file_line);
+       $ldelim  = $seq->ldelim;
+       ($rdelim = $ldelim) =~ tr/</>/;
+       $rdelim  =~ s/^(\S+)(\s*)$/$2$1/;
        pop @seq_stack;
-       my $errmsg = "** Unterminated $cmd<...> at $file line $line\n";
+       my $errmsg = "*** WARNING: unterminated ${cmd}${ldelim}...${rdelim}".
+                    " at line $line in file $file\n";
        (ref $errorsub) and &{$errorsub}($errmsg)
            or (defined $errorsub) and $self->$errorsub($errmsg)
                or  warn($errmsg);
@@ -877,17 +902,16 @@ sub parse_paragraph {
     local $_;
 
     ## See if we want to preprocess nonPOD paragraphs as well as POD ones.
-    my $wantNonPods = $myOpts{'-want_nonPODs'} || 0;
+    my $wantNonPods = $myOpts{'-want_nonPODs'};
+
+    ## Update cutting status
+    $myData{_CUTTING} = 0 if $text =~ /^={1,2}\S/;
 
     ## Perform any desired preprocessing if we wanted it this early
     $wantNonPods  and  $text = $self->preprocess_paragraph($text, $line_num);
 
-    ## This is the end of a non-empty paragraph
     ## Ignore up until next POD directive if we are cutting
-    if ($myData{_CUTTING}) {
-       return  unless ($text =~ /^={1,2}\S/);
-       $myData{_CUTTING} = 0;
-    }
+    return if $myData{_CUTTING};
 
     ## Now we know this is block of text in a POD section!
 
@@ -1034,9 +1058,20 @@ sub parse_from_filehandle {
             ++$plines;
         }
 
-        ## See of this line is blank and ends the current paragraph.
+        ## See if this line is blank and ends the current paragraph.
         ## If it isnt, then keep iterating until it is.
-        next unless (($textline =~ /^\s*$/) && (length $paragraph));
+        next unless (($textline =~ /^(\s*)$/) && (length $paragraph));
+
+        ## Issue a warning about any non-empty blank lines
+        if ( length($1) > 1 ) {
+            my $errorsub = $self->errorsub();
+            my $file = $self->input_file();
+            my $errmsg = "*** WARNING: line containing nothing but whitespace".
+                         " in paragraph at line $nlines in file $file\n";
+            (ref $errorsub) and &{$errorsub}($errmsg)
+                or (defined $errorsub) and $self->$errorsub($errmsg)
+                    or  warn($errmsg);
+        }
 
         ## Now process the paragraph
         parse_paragraph($self, $paragraph, ($nlines - $plines) + 1);
