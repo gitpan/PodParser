@@ -1,4 +1,10 @@
- 04-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
+ 22-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.10
+ + bump up the version number to avoid confusion with a short-lived
+   version of 1.093-beta
+
+ 21-Feb-2000           Brad Appleton                   <bradapp@enteract.com>
                        Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.093
