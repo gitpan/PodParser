@@ -1,0 +1,13 @@
+README       -- This file
+MANIFEST     -- This shipping list
+Makefile.PL  -- Perl Makefile template
+InputObjects.pm -- Input objects for Pod::Parser
+Parser.pm    -- The Pod::Parser module source
+Select.pm    -- The Pod::Select module source
+PlainText.pm -- The Pod::PlainText module source
+Usage.pm     -- The Pod::Usage module source
+podselect.PL -- Script to print selected sections of pod docs in raw pod
+                format (a command-line interface to podselect()).
+pod2usage.PL -- Script to print usage from a file's embeded pod docs
+                (a command-line interface to pod2usage()).
+
