@@ -10,18 +10,23 @@ BEGIN { plan tests => 4 }
 use Pod::Find qw(pod_find pod_where);
 use File::Spec;
 
+### TEST 1
 # load successful
 ok(1);
+### END TEST 1
 
 require Cwd;
 my $THISDIR = Cwd::cwd();
-my $VERBOSE = 0;
+my $VERBOSE = $ENV{TEST_VERBOSE} || 0;
 my $lib_dir = File::Spec->catdir($THISDIR,'lib');
 if ($^O eq 'VMS') {
     $lib_dir = VMS::Filespec::unixify(File::Spec->catdir($THISDIR,'-','lib','pod'));
     $Qlib_dir = $lib_dir;
     $Qlib_dir =~ s#\/#::#g;
 }
+
+### TEST 2
+
 print "### searching $lib_dir\n";
 my %pods = pod_find("$lib_dir");
 my $result = join(',', sort values %pods);
@@ -52,6 +57,10 @@ else {
     ok($result,$compare);
 }
 
+### END TEST 2
+
+### TEST 3
+
 # File::Find is located in this place since eons
 # and on all platforms, hopefully
 
@@ -72,6 +81,10 @@ else {
     ok(_canon($result),_canon($compare));
 }
 
+# END TEST 3
+
+# TEST 4
+
 # Search for a documentation pod rather than a module
 print "### searching for perlfunc.pod\n";
 $result = pod_where({ -inc => 1, -verbose => $VERBOSE }, 'perlfunc')
@@ -86,7 +99,8 @@ if ($^O eq 'VMS') { # privlib is perl_root:[lib] unfortunately
     ok($result,$compare);
 }
 else {
-    $compare = File::Spec->catfile($Config::Config{privlib},"perlfunc.pod");
+    $compare = File::Spec->catfile($Config::Config{privlib},
+      ($^O =~ /macos|darwin/i ? 'pods' : 'pod'),"perlfunc.pod");
     ok(_canon($result),_canon($compare));
 }
 
@@ -98,8 +112,9 @@ sub _canon
   my @comp = File::Spec->splitpath($path);
   my @dir = File::Spec->splitdir($comp[1]);
   $comp[1] = File::Spec->catdir(@dir);
-  $path = File::Spec->catpath(@dir);
+  $path = File::Spec->catpath(@comp);
   $path = uc($path) if File::Spec->case_tolerant;
+  print "### general path: $path\n" if $VERBOSE;
   $path;
 }
 

@@ -1,3 +1,11 @@
+ 07-Nov-2002           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.21
+ + fixed a bug in the find.t test
+ + make test work ok on MacOS/darwin, which strangely enough has its
+   perlfunc.pod in a "pods" directory, rather than "pod"
+
+
  31-Oct-2002           Marek Rouchal                        <marekr@cpan.org>
  -----------------------------------------------------------------------------
  Version 1.20
