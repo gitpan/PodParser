@@ -1,7 +1,7 @@
 ###### begin =include InputObjects.pm #####
 NAME
-    Pod::InputObjects - objects representing POD input paragraphs,
-    commands, etc.
+    Pod::InputObjects - objects representing POD input paragraphs, commands,
+    etc.
 
 SYNOPSIS
         use Pod::InputObjects;
@@ -13,28 +13,27 @@ EXPORTS
     Nothing.
 
 DESCRIPTION
-    This module defines some basic input objects used by Pod::Parser
-    when reading and parsing POD text from an input source. The
-    following objects are defined:
+    This module defines some basic input objects used by Pod::Parser when
+    reading and parsing POD text from an input source. The following objects
+    are defined:
 
     Pod::Paragraph
-        An object corresponding to a paragraph of POD input text. It
-        may be a plain paragraph, a verbatim paragraph, or a command
-        paragraph (see the perlpod manpage).
+        An object corresponding to a paragraph of POD input text. It may be
+        a plain paragraph, a verbatim paragraph, or a command paragraph (see
+        the perlpod manpage).
 
     Pod::InteriorSequence
-        An object corresponding to an interior sequence command from
-        the POD input text (see the perlpod manpage).
+        An object corresponding to an interior sequence command from the POD
+        input text (see the perlpod manpage).
 
     Pod::ParseTree
-        An object corresponding to a tree of parsed POD text. Each
-        "node" in a parse-tree (or *ptree*) is either a text-string
-        or a reference to a Pod::InteriorSequence object. The nodes
-        appear in the parse-tree in they order in which they were
-        parsed from left-to-right.
+        An object corresponding to a tree of parsed POD text. Each "node" in
+        a parse-tree (or *ptree*) is either a text-string or a reference to
+        a Pod::InteriorSequence object. The nodes appear in the parse-tree
+        in they order in which they were parsed from left-to-right.
 
-    Each of these input objects are described in further detail in
-    the sections which follow.
+    Each of these input objects are described in further detail in the
+    sections which follow.
 
 Pod::Paragraph
     An object representing a paragraph of POD input text. It has the
@@ -53,24 +52,22 @@ Pod::Paragraph
                                                 -file => $filename,
                                                 -line => $line_number);
 
-    This is a class method that constructs a `Pod::Paragraph' object
-    and returns a reference to the new paragraph object. It may be
-    given one or two keyword arguments. The `-text' keyword
-    indicates the corresponding text of the POD paragraph. The `-
-    name' keyword indicates the name of the corresponding POD
-    command, such as `head1' or `item' (it should *not* contain the
-    `=' prefix); this is needed only if the POD paragraph
-    corresponds to a command paragraph. The `-file' and `-line'
-    keywords indicate the filename and line number corresponding to
-    the beginning of the paragraph
+    This is a class method that constructs a `Pod::Paragraph' object and
+    returns a reference to the new paragraph object. It may be given one or
+    two keyword arguments. The `-text' keyword indicates the corresponding
+    text of the POD paragraph. The `-name' keyword indicates the name of the
+    corresponding POD command, such as `head1' or `item' (it should *not*
+    contain the `=' prefix); this is needed only if the POD paragraph
+    corresponds to a command paragraph. The `-file' and `-line' keywords
+    indicate the filename and line number corresponding to the beginning of
+    the paragraph
 
   cmd_name()
 
             my $para_cmd = $pod_para->cmd_name();
 
-    If this paragraph is a command paragraph, then this method will
-    return the name of the command (*without* any leading `='
-    prefix).
+    If this paragraph is a command paragraph, then this method will return
+    the name of the command (*without* any leading `=' prefix).
 
   text()
 
@@ -82,24 +79,24 @@ Pod::Paragraph
 
             my $raw_pod_para = $pod_para->raw_text();
 
-    This method will return the *raw* text of the POD paragraph,
-    exactly as it appeared in the input.
+    This method will return the *raw* text of the POD paragraph, exactly as
+    it appeared in the input.
 
   cmd_prefix()
 
             my $prefix = $pod_para->cmd_prefix();
 
-    If this paragraph is a command paragraph, then this method will
-    return the prefix used to denote the command (which should be
-    the string "=" or "==").
+    If this paragraph is a command paragraph, then this method will return
+    the prefix used to denote the command (which should be the string "=" or
+    "==").
 
   cmd_separator()
 
             my $separator = $pod_para->cmd_separator();
 
-    If this paragraph is a command paragraph, then this method will
-    return the text used to separate the command name from the rest
-    of the paragraph (if any).
+    If this paragraph is a command paragraph, then this method will return
+    the text used to separate the command name from the rest of the
+    paragraph (if any).
 
   parse_tree()
 
@@ -107,23 +104,23 @@ Pod::Paragraph
             $pod_para->parse_tree( $ptree );
             $ptree = $pod_para->parse_tree();
 
-    This method will get/set the corresponding parse-tree of the
-    paragraph's text.
+    This method will get/set the corresponding parse-tree of the paragraph's
+    text.
 
   file_line()
 
             my ($filename, $line_number) = $pod_para->file_line();
             my $position = $pod_para->file_line();
 
-    Returns the current filename and line number for the paragraph
-    object. If called in an array context, it returns a list of two
-    elements: first the filename, then the line number. If called in
-    a scalar context, it returns a string containing the filename,
-    followed by a colon (':'), followed by the line number.
+    Returns the current filename and line number for the paragraph object.
+    If called in an array context, it returns a list of two elements: first
+    the filename, then the line number. If called in a scalar context, it
+    returns a string containing the filename, followed by a colon (':'),
+    followed by the line number.
 
 Pod::InteriorSequence
-    An object representing a POD interior sequence command. It has
-    the following methods/attributes:
+    An object representing a POD interior sequence command. It has the
+    following methods/attributes:
 
   new()
 
@@ -136,15 +133,14 @@ Pod::InteriorSequence
                                                      -file => $filename,
                                                      -line => $line_number);
 
-    This is a class method that constructs a `Pod::InteriorSequence'
-    object and returns a reference to the new interior sequence
-    object. It should be given two keyword arguments. The `-ldelim'
-    keyword indicates the corresponding left-delimiter of the
-    interior sequence (e.g. '<'). The `-name' keyword indicates the
-    name of the corresponding interior sequence command, such as `I'
-    or `B' or `C'. The `-file' and `-line' keywords indicate the
-    filename and line number corresponding to the beginning of the
-    interior sequence.
+    This is a class method that constructs a `Pod::InteriorSequence' object
+    and returns a reference to the new interior sequence object. It should
+    be given two keyword arguments. The `-ldelim' keyword indicates the
+    corresponding left-delimiter of the interior sequence (e.g. '<'). The
+    `-name' keyword indicates the name of the corresponding interior
+    sequence command, such as `I' or `B' or `C'. The `-file' and `-line'
+    keywords indicate the filename and line number corresponding to the
+    beginning of the interior sequence.
 
   cmd_name()
 
@@ -157,8 +153,8 @@ Pod::InteriorSequence
             $pod_seq->prepend($text);
             $pod_seq1->prepend($pod_seq2);
 
-    Prepends the given string or parse-tree or sequence object to
-    the parse-tree of this interior sequence.
+    Prepends the given string or parse-tree or sequence object to the
+    parse-tree of this interior sequence.
 
   append()
 
@@ -172,28 +168,28 @@ Pod::InteriorSequence
 
             $outer_seq = $pod_seq->nested || print "not nested";
 
-    If this interior sequence is nested inside of another interior
-    sequence, then the outer/parent sequence that contains it is
-    returned. Otherwise `undef' is returned.
+    If this interior sequence is nested inside of another interior sequence,
+    then the outer/parent sequence that contains it is returned. Otherwise
+    `undef' is returned.
 
   raw_text()
 
             my $seq_raw_text = $pod_seq->raw_text();
 
-    This method will return the *raw* text of the POD interior
-    sequence, exactly as it appeared in the input.
+    This method will return the *raw* text of the POD interior sequence,
+    exactly as it appeared in the input.
 
   left_delimiter()
 
             my $ldelim = $pod_seq->left_delimiter();
 
-    The leftmost delimiter beginning the argument text to the
-    interior sequence (should be "<").
+    The leftmost delimiter beginning the argument text to the interior
+    sequence (should be "<").
 
   right_delimiter()
 
-    The rightmost delimiter beginning the argument text to the
-    interior sequence (should be ">").
+    The rightmost delimiter beginning the argument text to the interior
+    sequence (should be ">").
 
   parse_tree()
 
@@ -201,37 +197,34 @@ Pod::InteriorSequence
             $pod_seq->parse_tree( $ptree );
             $ptree = $pod_seq->parse_tree();
 
-    This method will get/set the corresponding parse-tree of the
-    interior sequence's text.
+    This method will get/set the corresponding parse-tree of the interior
+    sequence's text.
 
   file_line()
 
             my ($filename, $line_number) = $pod_seq->file_line();
             my $position = $pod_seq->file_line();
 
-    Returns the current filename and line number for the interior
-    sequence object. If called in an array context, it returns a
-    list of two elements: first the filename, then the line number.
-    If called in a scalar context, it returns a string containing
-    the filename, followed by a colon (':'), followed by the line
-    number.
+    Returns the current filename and line number for the interior sequence
+    object. If called in an array context, it returns a list of two
+    elements: first the filename, then the line number. If called in a
+    scalar context, it returns a string containing the filename, followed by
+    a colon (':'), followed by the line number.
 
   DESTROY()
 
-    This method performs any necessary cleanup for the interior-
-    sequence. If you override this method then it is imperative that
-    you invoke the parent method from within your own method,
-    otherwise *interior-sequence storage will not be reclaimed upon
-    destruction!*
+    This method performs any necessary cleanup for the interior-sequence. If
+    you override this method then it is imperative that you invoke the
+    parent method from within your own method, otherwise *interior-sequence
+    storage will not be reclaimed upon destruction!*
 
 Pod::ParseTree
-    This object corresponds to a tree of parsed POD text. As POD
-    text is scanned from left to right, it is parsed into an ordered
-    list of text-strings and Pod::InteriorSequence objects (in order
-    of appearance). A Pod::ParseTree object corresponds to this list
-    of strings and sequences. Each interior sequence in the parse-
-    tree may itself contain a parse-tree (since interior sequences
-    may be nested).
+    This object corresponds to a tree of parsed POD text. As POD text is
+    scanned from left to right, it is parsed into an ordered list of
+    text-strings and Pod::InteriorSequence objects (in order of appearance).
+    A Pod::ParseTree object corresponds to this list of strings and
+    sequences. Each interior sequence in the parse-tree may itself contain a
+    parse-tree (since interior sequences may be nested).
 
   new()
 
@@ -240,10 +233,10 @@ Pod::ParseTree
             my $ptree4 = Pod::ParseTree->new($array_ref);
             my $ptree3 = new Pod::ParseTree($array_ref);
 
-    This is a class method that constructs a `Pod::Parse_tree'
-    object and returns a reference to the new parse-tree. If a
-    single-argument is given, it mist be a reference to an array,
-    and is used to initialize the root (top) of the parse tree.
+    This is a class method that constructs a `Pod::Parse_tree' object and
+    returns a reference to the new parse-tree. If a single-argument is
+    given, it mist be a reference to an array, and is used to initialize the
+    root (top) of the parse tree.
 
   top()
 
@@ -251,51 +244,50 @@ Pod::ParseTree
             $ptree->top( $top_node );
             $ptree->top( @children );
 
-    This method gets/sets the top node of the parse-tree. If no
-    arguments are given, it returns the topmost node in the tree
-    (the root), which is also a Pod::ParseTree. If it is given a
-    single argument that is a reference, then the reference is
-    assumed to a parse-tree and becomes the new top node. Otherwise,
-    if arguments are given, they are treated as the new list of
-    children for the top node.
+    This method gets/sets the top node of the parse-tree. If no arguments
+    are given, it returns the topmost node in the tree (the root), which is
+    also a Pod::ParseTree. If it is given a single argument that is a
+    reference, then the reference is assumed to a parse-tree and becomes the
+    new top node. Otherwise, if arguments are given, they are treated as the
+    new list of children for the top node.
 
   children()
 
-    This method gets/sets the children of the top node in the parse-
-    tree. If no arguments are given, it returns the list (array) of
-    children (each of which should be either a string or a
-    Pod::InteriorSequence. Otherwise, if arguments are given, they
-    are treated as the new list of children for the top node.
+    This method gets/sets the children of the top node in the parse-tree. If
+    no arguments are given, it returns the list (array) of children (each of
+    which should be either a string or a Pod::InteriorSequence. Otherwise,
+    if arguments are given, they are treated as the new list of children for
+    the top node.
 
   prepend()
 
     This method prepends the given text or parse-tree to the current
-    parse-tree. If the first item on the parse-tree is text and the
-    argument is also text, then the text is prepended to the first
-    item (not added as a separate string). Otherwise the argument is
-    added as a new string or parse-tree *before* the current one.
+    parse-tree. If the first item on the parse-tree is text and the argument
+    is also text, then the text is prepended to the first item (not added as
+    a separate string). Otherwise the argument is added as a new string or
+    parse-tree *before* the current one.
 
   append()
 
     This method appends the given text or parse-tree to the current
-    parse-tree. If the last item on the parse-tree is text and the
-    argument is also text, then the text is appended to the last
-    item (not added as a separate string). Otherwise the argument is
-    added as a new string or parse-tree *after* the current one.
+    parse-tree. If the last item on the parse-tree is text and the argument
+    is also text, then the text is appended to the last item (not added as a
+    separate string). Otherwise the argument is added as a new string or
+    parse-tree *after* the current one.
 
   raw_text()
 
             my $ptree_raw_text = $ptree->raw_text();
 
-    This method will return the *raw* text of the POD parse-tree
-    exactly as it appeared in the input.
+    This method will return the *raw* text of the POD parse-tree exactly as
+    it appeared in the input.
 
   DESTROY()
 
-    This method performs any necessary cleanup for the parse-tree.
-    If you override this method then it is imperative that you
-    invoke the parent method from within your own method, otherwise
-    *parse-tree storage will not be reclaimed upon destruction!*
+    This method performs any necessary cleanup for the parse-tree. If you
+    override this method then it is imperative that you invoke the parent
+    method from within your own method, otherwise *parse-tree storage will
+    not be reclaimed upon destruction!*
 
 SEE ALSO
     See the Pod::Parser manpage, the Pod::Select manpage, and the
@@ -305,4 +297,3 @@ AUTHOR
     Brad Appleton <bradapp@enteract.com>
 
 ###### end =include InputObjects.pm #####
-

@@ -28,6 +28,9 @@ $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
                  podselect
                  pod2usage
                );
+sub script($) { File::Spec->catfile ('scripts', @_) }
+my @EXE_FILES = map { script $_ } @SCRIPTS;
+
 
 ## The test-script to execute regression tests (note that the
 ## 'xtra' directory might not exist for some installations)
@@ -46,7 +49,10 @@ WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
     VERSION_FROM => 'lib/Pod/Parser.pm',  ## Finds distribution $VERSION
-    realclean    => { FILES => "@SCRIPTS" },
+    PL_FILES     => { map { (script("$_.PL") => script($_)) } @SCRIPTS },
+    EXE_FILES    => [ @EXE_FILES ],
+    dist         => { COMPRESS => 'gzip', SUFFIX => 'gz' },
+    clean        => { FILES => "@EXE_FILES" },
     test         => { TESTS => "@TESTPODS" },
     ($] < 5.005 ?     ## Need File::Spec if this is 5.004 or earlier
        (PREREQ_PM  => {'File::Spec' => 0}) : ()),

@@ -1,3 +1,22 @@
+ 03-Sep-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.084
+ + Added Russ Allbery's Pod::PlainText re-write
+ + Added some tests contributed by Russ Allbery
+ + Fixed Makefile.PL to install the supplied scripts
+ + Updated copyright messages
+ + Added an error/warning callback function to Pod::Parser. When specified,
+   it will call the user-provided function instead of "warn" when printing
+   error messages (This makes it easier for things like Pod::Checker to
+   capture and/or redirect error output). See Pod::Parser::errorsub().
+
+ 28-Jun-1999           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.083
+ + Fixed problem with not defaulting to STDIN in parse_from_filehandle
+   (thanks to Russ Allbery for the patch)
+ + Fixed problem with != and -= (and <op>= in general) processing
+   inside of C<...> (thanks to Russ Allbery for this patch too)
 
  28-Apr-1999           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------

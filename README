@@ -38,22 +38,13 @@
    Please see the POD documentation for this module and Pod::Parser for
    more details (embedded in the file "PlainText.pm").
 
-   Pod::PlainText *can* peacefully co-exist with the current Pod::Text
-   (and pod2text) of your perl distribution. However, IF YOU WANT TO
-   PHYSICALLY REPLACE Pod::Text on your system you can do this by making
-   the following changes:
-
-      - Replace 'PlainText' with 'Text' in all *.pm and *.PL files in the
-        PodParser package (dont forget the 't/' subdirectory).
-
-      - Rename 'PlainText.pm' to 'Text.pm'.
-
-      - You should probably copy the existing Pod::Text and pod2text files
-        in your perl distribution to a new name and/or location before
-        overwriting them when you perform 'make install'
- 
-   YOU PROBABLY DO NOT WANT TO DO THIS!!!! Pod::PlainText is not yet
-   verified to produce equivalent output to Pod::Text.
+   *NOTE*: As of perl 5.00_58, Pod::PlainText has been re-written by
+   Russ Allbery, and has been renamed to Pod::Text in the core Perl
+   distribution (replacing the previous implementation of Pod::Text).
+   The Pod::PlainText module is still provided with Pod::Parser on CPAN
+   solely for backward compatibility. Once Perl 5.6 becomes the latest
+   stable version of Perl, then Pod::PlainText will be removed from the
+   PodParser distribution!!
 
  Pod::InputObjects
  -----------------
@@ -65,13 +56,13 @@
    A module to check the syntax of a POD document. It is just in the
    very beginning stages right now and is *far* from being thorough or
    complete. Its just a starting point that I hope others who plan to
-   use it can help me flesh out further.
+   use it can help me flesh it out further.
 
 
  AUTHORS/CONTRIBUTORS
  ====================
  Brad Appleton  <bradapp@enteract.com>  http://www.enteract.com/~bradapp/
- (derived from Pod::Text by Tom Christiansen <tchrist@mox.perl.com>)
+ Russ Allbery   <rra@standford.edu>
 
 
  ACKNOWLEDGEMENTS
@@ -89,10 +80,14 @@
    make pre-release versions of Pod::Parser work with code and giving me
    feedback on the implementation and design.
 
+ * Russ Allbery for re-writing Pod::PlainText from scratch and getting it
+   to replace Pod::Text in the core for perl 5.00_58!
 
  COPY/REUSE POLICY
  =================
- Copyright (C) 1996-1999 by Tom Christiansen. All rights reserved.
+ Except where explicitly stated otherwise within the contents of a file,
+ this distribution and all the files in it are Copyright (C) 1996-1999
+ by Brad Appleton.  All rights reserved.
 
  PodParser is free software; you can redistribute it and/or modify it
  under the terms of the Artistic License distributed with Perl version

@@ -1,10 +1,7 @@
 #############################################################################
 # Pod/Parser.pm -- package which defines a base class for parsing POD docs.
 #
-# Based on Tom Christiansen's Pod::Text module
-# (with extensive modifications).
-#
-# Copyright (C) 1996-1999 Tom Christiansen. All rights reserved.
+# Copyright (C) 1996-1999 by Bradford Appleton. All rights reserved.
 # This file is part of "PodParser". PodParser is free software;
 # you can redistribute it and/or modify it under the same terms
 # as Perl itself.
@@ -13,7 +10,7 @@
 package Pod::Parser;
 
 use vars qw($VERSION);
-$VERSION = 1.082;  ## Current version of this package
+$VERSION = 1.084;  ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -651,10 +648,11 @@ is a reference to the parse-tree object.
 =cut
 
 ## This global regex is used to see if the text before a '>' inside
-## an interior sequence looks like '-' or '=', but not '--' or '=='
+## an interior sequence looks like '-' or '=', but not '--', '==',
+## '!=', '$-', '$=' or <<op>>=
 use vars qw( $ARROW_RE );
-$ARROW_RE = join('', qw{ (?: [^=]+= | [^-]+- )$ });  
-#$ARROW_RE = qr/(?:[^=]+=|[^-]+-)$/;  ## 5.005+ only!
+$ARROW_RE = join('', qw{ (?: [^-+*/=!&|%^x.<>$]= | [^-$]- )$ });
+#$ARROW_RE = qr/(?:[^-+*/=!&|%^x.<>$]+=|[^-$]+-)$/;  ## 5.005+ only!
 
 sub parse_text {
     my $self = shift;
@@ -737,10 +735,14 @@ sub parse_text {
     }
 
     ## Handle unterminated sequences
+    my $errorsub = (@seq_stack > 1) ? $self->errorsub() : undef;
     while (@seq_stack > 1) {
        ($cmd, $file, $line) = ($seq->name, $seq->file_line);
        pop @seq_stack;
-       warn "** Unterminated $cmd<...> at $file line $line\n";
+       my $errmsg = "** Unterminated $cmd<...> at $file line $line\n";
+       (ref $errorsub) and &{$errorsub}($errmsg)
+           or (defined $errmsg) and $self->$errorsub($errmsg)
+               or  warn($errmsg);
        $seq_stack[-1]->append($expand_seq ? &$xseq_sub($self,$seq) : $seq);
        $seq = $seq_stack[-1];
     }
@@ -914,6 +916,7 @@ sub parse_from_filehandle {
     my $self = shift;
     my %opts = (ref $_[0] eq 'HASH') ? %{ shift() } : ();
     my ($in_fh, $out_fh) = @_;
+    $in_fh = \*STDIN  unless ($in_fh);
     local $_;
 
     ## Put this stream at the top of the stack and do beginning-of-input
@@ -1092,6 +1095,35 @@ Clients of B<Pod::Parser> should use the following methods to access
 instance data fields:
 
 =cut
+
+##---------------------------------------------------------------------------
+
+=head1 B<errorsub()>
+
+            $parser->errorsub("method_name");
+            $parser->errorsub(\&warn_user);
+            $parser->errorsub(sub { print STDERR, @_ });
+
+Specifies the method or subroutine to use when printing error messages
+about POD syntax. The supplied method/subroutine I<must> return TRUE upon
+successful printing of the message. If C<undef> is given, then the B<warn>
+builtin is used to issue error messages (this is the default behavior).
+
+            my $errorsub = $parser->errorsub()
+            my $errmsg = "This is an error message!\n"
+            (ref $errorsub) and &{$errorsub}($errmsg)
+                or (defined $errmsg) and $parser->$errorsub($errmsg)
+                    or  warn($errmsg);
+
+Returns a method name, or else a reference to the user-supplied subroutine
+used to print error messages. Returns C<undef> if the B<warn> builtin
+is used to issue error messages (this is the default behavior).
+
+=cut
+
+sub errorsub {
+   return (@_ > 1) ? ($_[0]->{_ERRORSUB} = $_[1]) : $_[0]->{_ERRORSUB};
+}
 
 ##---------------------------------------------------------------------------
 

@@ -32,6 +32,8 @@ t/pod/included.t      -- test-input file for =including another file
 t/pod/included.xr     -- expected result from processing included.t
 t/pod/lref.t          -- test-input file for L<...> sequences
 t/pod/lref.xr         -- expected result from processing lref.t
+t/pod/multiline_items.t  -- test-input file for multiline =items
+t/pod/multiline_items.xr -- expected result from processing multiline_items.t
 t/pod/nested_items.t  -- test-input file for nested =items
 t/pod/nested_items.xr -- expected result from processing nested_items.t
 t/pod/nested_seqs.t   -- test-input file for nested interior sequences

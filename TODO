@@ -4,16 +4,23 @@
 
  SHORT TERM
  ----------
+ * Remove Pod::PlainText from the PodParser distribution once it has
+   replaced Pod::Text (in functin and in name) in the latest stable
+   Perl distribution (this is slated to happen for Perl 5.6, its currently
+   in 5.005_58 now but thats stil considered a development versin rather
+   than "stable").
+
+ * Make the test-suite more portable (for Mac + VMS + NT) without having
+   to use lots of ugly conditional code. There has to be a better way
+   to to dissect and reconstruct filepaths than what 5.004 currently
+   offers.
+
  * Add the ability to use callbacks _instead_ _of_ inheritance if so
    desired (or mix+match 'em as you wish). This means that there should
    be a way to use callbacks instead of inheritance for the equivalent
    of each of the abstract base class methods that do text processing
    (like preprocess_xxxxx and {begin,end}_xxxx and others). This will go
    into a module named Pod::Callbacks.
-
- * Add some kind of error-message function which adds file/line info
-   to the printed text, and perhaps allow the user to supply their
-   own die/croak and warn/carp criteria.
 
  * IMPROVE PERFORMANCE!!! (its getting kind of slow)
 
