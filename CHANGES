@@ -1,4 +1,21 @@
 
+ 16-Jan-1998           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.07
+ + Added Pod::Checker and podchecker.PL
+ + Fixed line-counting errors in Pod::Parser::parse_from_filehandle()
+ + Added raw_text method for Pod::ParseTree
+ + Documented optional hash-ref arg to Pod::Parser::parse_text and replaced
+   '-expand' with '-expand_seq' and '-expand_ptree'
+ + parse_text now has sequences point to the parents they are nested inside
+   of as soon as they are created (instead of after they are appended to
+   the parent, which may occur *after* expansion)
+ + Added the regression test-suite to the distribution in the t/ subdirectory.
+   Its not very exhaustive, but its a start.
+ + Now uses File::Spec, which is bundled with perl 5.005 and later, but if
+   you have perl 5.004 you may need to download File::Spec from CPAN
+ 
+
  09-Nov-1998           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Version 1.061
@@ -17,7 +34,7 @@
  Version 1.06
  + SIGNIFICANT CHANGES (POSSIBLE BACKWARD INCOMPATIBILITIES)
    * Pod::InputObjects::ParseTree object ADDED. This object corresponds
-     to a parse-tree of parsed pod parapgraph text. Every node in the
+     to a parse-tree of parsed pod paragraph text. Every node in the
      parse-tree is either a text-string, or a Pod::InteriorSequence
      that has yet to be expanded.
 

@@ -3,13 +3,55 @@ README       -- Main information file
 MANIFEST     -- This shipping list
 TODO         -- Tentative "to do" list for future development
 Makefile.PL  -- Perl Makefile template
+
 InputObjects.pm -- Input objects for Pod::Parser
 Parser.pm    -- The Pod::Parser module source
 Select.pm    -- The Pod::Select module source
 PlainText.pm -- The Pod::PlainText module source
 Usage.pm     -- The Pod::Usage module source
+Checker.pm   -- The Pod::Checker module source
+
 podselect.PL -- Script to print selected sections of pod docs in raw pod
                 format (a command-line interface to podselect()).
 pod2usage.PL -- Script to print usage from a file's embeded pod docs
                 (a command-line interface to pod2usage()).
+podchecker.PL -- Script to check syntax of pods in a file
 
+t/testp2pt.pl     -- module used to test Pod::PlainText for a given file
+t/testpchk.pl     -- module used to test Pod::Checker for a given file
+t/InputObjects.t  -- test input file for processing InputObjects.pm
+t/InputObjects.xr -- expected result from processing InputObjects.pm
+t/Parser.t        -- test input file for processing Parser.pm
+t/Parser.xr       -- expected result from processing Parser.pm
+t/PlainText.t     -- expected result from processing PlainText.pm
+t/PlainText.xr    -- expected result from processing PlainText.pm
+t/Select.t        -- test input file for processing Select.pm
+t/Select.xr       -- expected result from processing Select.pm
+t/Usage.t         -- test input file for processing Usage.pm
+t/Usage.xr        -- expected result from processing Usage.pm
+t/emptycmd.t      -- test-input file for an empty pod directive
+t/emptycmd.xr     -- expected result from processing emptycmd.t
+t/for.t           -- test-input file for =for directives
+t/for.xr          -- expected result from processing for.t
+t/headings.t      -- test-input file for =head directives
+t/headings.xr     -- expected result from processing headings.t
+t/include.t       -- test-input file for an =included file
+t/include.xr      -- expected result from processing include.t
+t/included.t      -- test-input file for =including another file
+t/included.xr     -- expected result from processing included.t
+t/lref.t          -- test-input file for L<...> sequences
+t/lref.xr         -- expected result from processing lref.t
+t/nested_items.t  -- test-input file for nested =items
+t/nested_items.xr -- expected result from processing nested_items.t
+t/nested_seqs.t   -- test-input file for nested interior sequences
+t/nested_seqs.xr  -- expected result from processing nested_seqs.t
+t/oneline_cmds.t  -- test-input file for ==cmds 
+t/oneline_cmds.xr -- expected result from processing oneline_cmds.t
+t/poderrs.t       -- test input file for checking some POD errors
+t/poderrs.xr      -- expected result from processing poderrs.t
+t/pod2usage.t     -- test input file for processing pod2usage.PL
+t/pod2usage.xr    -- expected result from processing pod2usage.PL
+t/podselect.t     -- test input file for processing podselect.PL
+t/podselect.xr    -- expected result from processing podselect.PL
+t/special_seqs.t  -- test-input file for "special" interior sequences
+t/special_seqs.xr -- expected result from processing special_seqs.t

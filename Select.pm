@@ -12,7 +12,7 @@
 
 package Pod::Select;
 
-$VERSION = 1.061;   ## Current version of this package
+$VERSION = 1.07;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 #############################################################################
@@ -203,7 +203,6 @@ sub _init_headings {
             ($head1, $head2, $head3, ...) = $parser->curr_headings();
             $head1 = $parser->curr_headings(1);
 
-
 This method returns a list of the currently active section headings and
 subheadings in the document being parsed. The list of headings returned
 corresponds to the most recently parsed paragraph of the input.
@@ -227,7 +226,6 @@ sub curr_headings {
 =head1 B<select()>
 
             $parser->select($section_spec1,$section_spec2,...);
-
 
 This method is used to select the particular sections and subsections of
 POD documentation that are to be printed and/or processed. The existing
@@ -297,7 +295,6 @@ sub select {
 
             $parser->add_selection($section_spec1,$section_spec2,...);
 
-
 This method is used to add to the currently selected sections and
 subsections of POD documentation that are to be printed and/or
 processed. See <select()> for replacing the currently selected sections.
@@ -322,7 +319,6 @@ sub add_selection {
 
             $parser->clear_selections();
 
-
 This method takes no arguments, it has the exact same effect as invoking
 <select()> with no arguments.
 
@@ -338,7 +334,6 @@ sub clear_selections {
 =head1 B<match_section()>
 
             $boolean = $parser->match_section($heading1,$heading2,...);
-
 
 Returns a value of true if the given section and subsection heading
 titles match any of the currently selected section specifications in
@@ -398,7 +393,6 @@ sub match_section {
 
             $boolean = $parser->is_selected($paragraph);
 
-
 This method is used to determine if the block of text given in
 C<$paragraph> falls within the currently selected set of POD sections
 and subsections to be printed or processed. This method is also
@@ -451,7 +445,6 @@ implicit first argument.
 =head1 B<podselect()>
 
             podselect(\%options,@filelist);
-
 
 B<podselect> will print the raw (untranslated) POD paragraphs of all
 POD sections in the given input files specified by C<@filelist>
@@ -547,7 +540,6 @@ prefix of "_" and match the regular expression C</^_\w+$/>.
 =head1 B<_compile_section_spec()>
 
             $listref = $parser->_compile_section_spec($section_spec);
-
 
 This function (note it is a function and I<not> a method) takes a
 section specification (as described in L<"SECTION SPECIFICATIONS">)

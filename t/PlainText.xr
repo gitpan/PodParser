@@ -1,0 +1,66 @@
+###### begin =include PlainText.pm #####
+NAME
+    pod2plaintext - function to convert POD data to formatted ASCII
+    text
+
+    Pod::PlainText - a class for converting POD data to formatted
+    ASCII text
+
+SYNOPSIS
+        use Pod::PlainText;
+        pod2plaintext("perlfunc.pod");
+
+    or
+
+        use Pod::PlainText;
+        package MyParser;
+        @ISA = qw(Pod::PlainText);
+
+        sub new {
+           ## constructor code ...
+        }
+
+        ## implementation of appropriate subclass methods ...
+
+        package main;
+        $parser = new MyParser;
+        @ARGV = ('-')  unless (@ARGV > 0);
+        for (@ARGV) {
+           $parser->parse_from_file($_);
+        }
+
+REQUIRES
+    perl5.004, Pod::Select, Term::Cap, Exporter, Carp
+
+EXPORTS
+    pod2plaintext()
+
+DESCRIPTION
+    Pod::PlainText is a module that can convert documentation in the
+    POD format (such as can be found throughout the Perl
+    distribution) into formatted ASCII. Termcap is optionally
+    supported for boldface/underline, and can be enabled via
+    `$Pod::PlainText::termcap=1'. If termcap has not been enabled,
+    then backspaces will be used to simulate bold and underlined
+    text.
+
+    A separate pod2plaintext program is included that is primarily a
+    wrapper for `Pod::PlainText::pod2plaintext()'.
+
+    The single function `pod2plaintext()' can take one or two
+    arguments. The first should be the name of a file to read the
+    pod from, or "<&STDIN" to read from STDIN. A second argument, if
+    provided, should be a filehandle glob where output should be
+    sent.
+
+SEE ALSO
+    the Pod::Parser manpage.
+
+AUTHOR
+    Tom Christiansen <tchrist@mox.perl.com>
+
+    Modified to derive from Pod::Parser by Brad Appleton
+    <bradapp@enteract.com>
+
+###### end =include PlainText.pm #####
+

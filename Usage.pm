@@ -12,7 +12,7 @@
 
 package Pod::Usage;
 
-$VERSION = 1.061;   ## Current version of this package
+$VERSION = 1.07;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -113,8 +113,6 @@ implied by C<$ENV{PATH}>. The list may be specified either by a reference
 to an array, or by a string of directory paths which use the same path
 separator as C<$ENV{PATH}> on your system (e.g., C<:> for Unix, C<;> for
 MSWin32 and DOS).
-
-fully specified
 
 =back
 
@@ -344,7 +342,6 @@ similar to the following:
 
     pod2usage(-exitval => 2, -input => "/path/to/your/pod/docs");
 
-
 =head1 AUTHOR
 
 Brad Appleton E<lt>bradapp@enteract.comE<gt>
@@ -367,6 +364,7 @@ use strict;
 use Carp;
 use Exporter;
 use Pod::PlainText;
+use File::Spec;
 
 @ISA = qw(Pod::PlainText);
 @EXPORT = qw(&pod2usage);
@@ -432,15 +430,11 @@ sub pod2usage {
     ## Look up input file in path if it doesnt exist.
     unless ((ref $opts{"-input"}) || (-e $opts{"-input"})) {
         my ($dirname, $basename) = ('', $opts{"-input"});
-        my ($pathsep, $dirsep) = ($^O =~ /^(?:dos|os2|MSWin32)$/)
-                                        ? (";", "\\")  :  (":", "/");
+        my $pathsep = ($^O =~ /^(?:dos|os2|MSWin32)$/)  ?  ";"  :  ":";
         my $pathspec = $opts{"-pathlist"} || $ENV{PATH};
         my @paths = (ref $pathspec) ? @$pathspec : split($pathsep, $pathspec);
         for $dirname (@paths) {
-            ## It would be nice if I could do this without hardcoding
-            ## the '/' (which might not work for non-Unix systems).
-            $_ = (length $dirname) ? $dirname . $dirsep . $basename
-                                   : $basename;
+            $_ = File::Spec->catfile($dirname, $basename)  if length;
             last if (-e $_) && ($opts{"-input"} = $_);
         }
     }

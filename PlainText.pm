@@ -12,7 +12,7 @@
 
 package Pod::PlainText;
 
-$VERSION = 1.061;   ## Current version of this package
+$VERSION = 1.07;   ## Current version of this package
 require  5.004;    ## requires this Perl version or later
 
 =head1 NAME
@@ -506,8 +506,9 @@ sub command {
         print $out_fh ' ' x ($self->{DEF_INDENT}/2), $_, "\n";
     }
     elsif ($cmd eq 'over') {
+        /^[-+]?\d+$/  or  $_ = $self->{DEF_INDENT};
         push(@{$self->{INDENTS}}, $self->{INDENT});
-        $self->{INDENT} += ($_ + 0) || $self->{DEF_INDENT};
+        $self->{INDENT} += ($_ + 0);
     }
     elsif ($cmd eq 'back') {
         $self->{INDENT} = pop(@{$self->{INDENTS}});
@@ -515,7 +516,6 @@ sub command {
             carp "Unmatched =back\n";
             $self->{INDENT} = $self->{DEF_INDENT};
         }
-        $self->{NEEDSPACE} = 1;
     }
     elsif ($cmd eq 'begin') {
        my ($kind) = /^(\S*)/;
@@ -545,8 +545,8 @@ sub verbatim {
     my $line = shift;
     return  if $self->begun_excluded();
     return  $self->item('', $_, $line)  if (defined $self->{ITEM});
-    $self->{NEEDSPACE} = 1;
     $self->output($_);
+    #$self->{NEEDSPACE} = 1;
 }
 
 sub textblock {
@@ -556,7 +556,7 @@ sub textblock {
     return  if $self->begun_excluded();
     return  $self->item('', $text, $line)  if (defined $self->{ITEM});
     local($_) = $self->interpolate($text, $line);
-    s/\s*$/\n/;
+    s/\s*\Z/\n/;
     $self->makespace();
     $self->output($_, REFORMAT => 1);
 }
@@ -597,7 +597,11 @@ sub interior_sequence {
     }
     elsif ($cmd eq 'L') {
         s/\s+/ /g;
-        my ($manpage, $sec, $ref) = ($_, '', '');
+        my ($text, $manpage, $sec, $ref) = ('', $_, '', '');
+        if (/\A(.*?)\|(.*)\Z/) {
+            $text = $1;
+            $manpage = $_ = $2;
+        }
         if (/^\s*"\s*(.*)\s*"\s*$/o) {
             ($manpage, $sec) = ('', "\"$1\"");
         }
@@ -616,7 +620,7 @@ sub interior_sequence {
              $ref .= (length $manpage) ? " in the $manpage manpage"
                                        : " in this manpage"
         }
-        $_ = $ref;
+        $_ = $text || $ref;
         #if ( m{^ ([a-zA-Z][^\s\/]+) (\([^\)]+\))? $}x ) {
         #    ## LREF: a manpage(3f)
         #    $_ = "the $1$2 manpage";
