@@ -50,8 +50,6 @@
 
 Pod::Checker etc.:
 
-  implement L<|link>, i.e. empty alttext gives link text only.
-
 Brad:
 
  * I do not think there should ever be any complaint about the first
@@ -61,7 +59,7 @@ Brad:
    Sometimes it useful to have an untitled intro. Now it *is* true that any
    manpage should start with a heading, but not any POD document in general.
 
-   => implement '-manpage' switch?!?
+   => implement '-manpage' option for Pod::Checker?
 
 Wolfgang Laun:
 

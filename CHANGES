@@ -1,3 +1,12 @@
+ 03-Jul-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
+ -----------------------------------------------------------------------------
+ Version 1.15
+ + introduced -quiet option for Pod::Checker to suppress diagnostic
+   output when Pod::Checker is used to eat POD and output text.
+ + improved documentation in Pod::Checker
+ + improved code coverage of t/pod/poderrs.t
+ + updated TODO
+
  04-Jun-2000           Marek Rouchal      <marek@saftsack.fs.uni-bayreuth.de>
  -----------------------------------------------------------------------------
  Version 1.14

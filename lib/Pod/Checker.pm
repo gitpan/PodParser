@@ -10,7 +10,7 @@
 package Pod::Checker;
 
 use vars qw($VERSION);
-$VERSION = 1.1;  ## Current version of this package
+$VERSION = 1.2;  ## Current version of this package
 require  5.005;    ## requires this Perl version or later
 
 use Pod::ParseUtils; ## for hyperlinks and lists
@@ -279,11 +279,41 @@ The NAME section (C<=head1 NAME>) should consist of a single paragraph
 with the script/module name, followed by a dash `-' and a very short
 description of what the thing is good for.
 
-=item * Hyperlinks
+=back
 
-There are some warnings wrt. hyperlinks:
-Leading/trailing whitespace, newlines in hyperlinks,
-brackets C<()>.
+=head2 Hyperlinks
+
+There are some warnings wrt. malformed hyperlinks.
+
+=over 4
+
+=item * collapsing newlines to blanks
+
+A hyperlink LE<lt>...E<gt> spans more than one line. This may indicate
+and error.
+
+=item * ignoring leading/trailing whitespace in link
+
+There is whitespace at the beginning or the end of the contents of 
+LE<lt>...E<gt>.
+
+=item * (section) in '$page' deprecated
+
+There is a section detected in the page name of LE<lt>...E<gt>, e.g.
+C<LE<gt>passwd(2)E<gt>>. POD hyperlinks may point to POD documents only.
+Please write C<CE<lt>passwd(2)E<gt>> instead. Some formatters are able
+to expand this to appropriate code. For links to (builtin) functions,
+please say C<LE<lt>perlfunc/mkdirE<gt>>, without ().
+
+=item * alternative text/node '%s' contains non-escaped | or /
+
+The characters C<|> and C</> are special in the LE<lt>...E<gt> context.
+Although the hyperlink parser does its best to determine which "/" is
+text and which is a delimiter in case of doubt, one ought to escape
+these literal characters like this:
+
+  /     E<sol>
+  |     E<verbar>
 
 =back
 
@@ -476,7 +506,6 @@ sub podchecker( $ ; $ % ) {
 
     ## Now create a pod checker
     my $checker = new Pod::Checker(%options);
-    $checker->parseopts(-process_cut_cmd => 1, -warnings => 1);
 
     ## Now check the pod document for errors
     $checker->parse_from_file($infile, $outfile);
@@ -490,6 +519,27 @@ sub podchecker( $ ; $ % ) {
 ##-------------------------------
 ## Method definitions begin here
 ##-------------------------------
+
+##################################
+
+=over 4
+
+=item C<Pod::Checker-E<gt>new( %options )>
+
+Return a reference to a new Pod::Checker object that inherits from
+Pod::Parser and is used for calling the required methods later. The
+following options are recognized:
+
+C<-warnings =E<gt> num>
+  Print warnings if C<num> is true. The higher the value of C<num>,
+the more warnings are printed. Currently there are only levels 1 and 2.
+
+C<-quiet =E<gt> num>
+  If C<num> is true, do not print any errors/warnings. This is useful
+when Pod::Checker is used to munge POD code into plain text from within
+POD formatters.
+
+=cut
 
 ## sub new {
 ##     my $this = shift;
@@ -506,7 +556,9 @@ sub initialize {
     ## Initialize number of errors, and setup an error function to
     ## increment this number and then print to the designated output.
     $self->{_NUM_ERRORS} = 0;
-    $self->errorsub('poderror'); # set the error handling subroutine
+    $self->{-quiet} ||= 0;
+    # set the error handling subroutine
+    $self->errorsub($self->{-quiet} ? sub { 1; } : 'poderror');
     $self->{_commands} = 0; # total number of POD commands encountered
     $self->{_list_stack} = []; # stack for nested lists
     $self->{_have_begin} = ''; # stores =begin
@@ -516,11 +568,10 @@ sub initialize {
     # print warnings?
     $self->{-warnings} = 1 unless(defined $self->{-warnings});
     $self->{_current_head1} = ''; # the current =head1 block
+    $self->parseopts(-process_cut_cmd => 1, -warnings => $self->{-warnings});
 }
 
 ##################################
-
-=over 4
 
 =item C<$checker-E<gt>poderror( @args )>
 
@@ -566,7 +617,7 @@ sub poderror {
     ## Increment error count and print message "
     ++($self->{_NUM_ERRORS}) 
         if(!%opts || ($opts{-severity} && $opts{-severity} eq 'ERROR'));
-    my $out_fh = $self->output_handle();
+    my $out_fh = $self->output_handle() || \*STDERR;
     print $out_fh ($severity, $msg, $line, $file, "\n")
       if($self->{-warnings} || !%opts || $opts{-severity} ne 'WARNING');
 }
