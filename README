@@ -5,56 +5,91 @@
  Perl5 "pod" (Plain Old Documentation).  See the "perlpod" and "perlsyn"
  manual pages from your Perl5 distribution for more information about pod.
 
- PodParser
- ---------
-   The Perl5 module "Pod::Parser" which provides a base class for
-   parsing and selecting sections of pod documentation from an input
-   stream.  Please see the pod documentation for this module (embedded
+ Pod::Parser
+ -----------
+   The Perl5 module "Pod::Parser", which provides a base class for
+   parsing and selecting sections of POD documentation from an input
+   stream.  Please see the POD documentation for this module (embedded
    in the file "Parser.pm") for more details.
 
- PodSelect
- ---------
-   The Perl5 module "Pod::Select" which provides a function to dump
+ Pod::Select
+ -----------
+   The Perl5 module "Pod::Select", which provides a subclass of
+   Pod::Parser and an exported function named "podselect()" to dump
    selected sections of raw pod documentation from an input stream.
-   Please see the pod documentation for this module and Pod::Parser for
-   more details (embedded in the file "Select.pm").
+   Please see the POD documentation for this module (embedded in the
+   file "Select.pm") and Pod::Parser for more details.
 
- PodText
- -------
-   A replacement for the Perl5 module "Pod::Text" and the corresponding
-   "pod2text()" function. It is derived from the Pod::Parser class.
-   Please see the pod documentation for this module and Pod::Parser for
-   more details (embedded in the file "Text.pm").
+ Pod::Parser
+ ----------
+   The Perl5 module "Pod::Parser", which provides a subclass of
+   Pod::Parser and an exported function named "podparse()" that lets
+   the programmer use callbacks instead of and/or in addition to
+   inheritance+polymorphism. This module makes it much easier to
+   use Pod::Parser with existing code, and with code that is not
+   object-oriented . Please see the POD documentation for this
+   module (embedded in the file "Parse.pm") and Pod::Parser for more
+   details.
 
- PodUsage
- --------
+ Pod::Usage
+ ----------
    The Perl5 module "Pod::Usage" which provides the function "pod2usage()"
    to print usage messages for a Perl script based on its embedded pod
-   documentation.  Please see the pod documentation for this module
-   (embedded in the file "Usage.pm") for more details. The pod2usage()
-   function is probably the most generally useful function in this entire
-   distribution since it is useful just about any Perl5 script that is
-   invoked from the command-line.
+   documentation. Pod::Usage is a subclass of Pod::PlainText. Please see
+   the POD documentation for this module (embedded in the file "Usage.pm")
+   for more details. The pod2usage() function is probably the most
+   generally useful function in this entire distribution since it is
+   useful to just about any Perl5 script that is invoked from the
+   command-line.
 
+ Pod::PlainText
+ --------------
+   A replacement for the Perl5 module "Pod::Text" and the corresponding
+   "pod2text()" function. It is derived from the Pod::Parser class.
+   Please see the POD documentation for this module and Pod::Parser for
+   more details (embedded in the file "PlainText.pm").
+
+   Pod::PlainText and pod2plaintext *can* peacefully co-exist with the
+   the current Pod::Text and pod2text of your perl distribution. However,
+   IF YOU WANT TO PHYSICALLY REPLACE Pod::Text on your system you can do
+   this by making the following changes:
+
+      - Replace 'PlainText' with 'Text' and 'plaintext' with 'text'
+        in all *.pm and *.PL files in the PodParser package.
+
+      - Rename 'PlainText.pm' to 'Text.pm' and 'pod2plaintext.PL' to
+        'pod2text.PL'.
+
+      - You should probably copy the existing Pod::Text and pod2text files
+        in your perl distribution to a new name and/or location before
+        overwriting them when you perform 'make install'
+ 
+   YOU PROBABLY DO NOT WANT TO DO THIS!!!! Pod::PlainText only supports
+   the subset of POD recognized by Perl 5.002. It DOES NOT yet know
+   how to handle some of the newer additions (like =begin/=end). I
+   hope to remedy this for a later release.
 
  AUTHORS/CONTRIBUTORS
  ====================
- Brad Appleton  <Brad_Appleton-GBDA001@email.mot.com>
+ Brad Appleton  <bradapp@enteract.com>  http://www.enteract.com/~bradapp/
  (derived from Pod::Text by Tom Christiansen <tchrist@mox.perl.com>)
 
 
  ACKNOWLEDGEMENTS
  ================
- Kenneth Albanowski (kjahds@kjahds.com, CIS: 70705,126) for his
- extensive assistance with the design and interface of Pod::Parser.
+ * Kenneth Albanowski (kjahds@kjahds.com, CIS: 70705,126) for his
+   extensive assistance with the design and interface of Pod::Parser.
 
-  * Kenneth is currently working on a "Pod::Simplify" module (among
-    other things) which is presently available on CPAN although it is
-    not yet completed.  Pod::Simplify (formerly "Pod::Parse") is loaded
-    with *lots* of goodies for formatting and translation heuristics for
-    converting pod docs into other documentation formats.  If it seems
-    feasible, Kenneth and Brad will try to have Pod::Simplify be a
-    subclass of Pod::Parser when it is completed.
+     Kenneth is currently working on a "Pod::Simplify" module (among
+     other things) which is presently available on CPAN although it is
+     not yet completed.  Pod::Simplify (formerly "Pod::Parse") is loaded
+     with *lots* of goodies for formatting and translation heuristics for
+     converting POD docs into other documentation formats.  If it seems
+     feasible, Kenneth and Brad will try to have Pod::Simplify be a
+     subclass of Pod::Parser when it is completed.
+
+ * Steven McDougall <swmcd@world.std.com> for his help and patience with
+   re-writing the manpage for Pod::Usage and Pod::Parser.
 
 
  COPY/REUSE POLICY
@@ -105,25 +140,13 @@
 
  CONTENTS
  ========
- README       -- This file
- Makefile.PL  -- Perl Makefile template
- Parser.pm    -- The Pod::Parser module source
- Select.pm    -- The Pod::Select module source
- Text.pm      -- The Pod::Text module source
- Usage.pm     -- The Pod::Usage module source
- podselect.PL -- Script to print selected sections of pod docs in raw pod
-                 format (a command-line interface to podselect()).
- pod2usage.PL -- Script to print usage from a file's embeded pod docs
-                 (a command-line interface to pod2usage()).
-
- *PLEASE* *NOTE* that no pod2text.PL replacement script is provided since
- the original pod2text.PL provided with Perl5 will continue to work with
- this new version of Pod::Text.
+ Please see the file named "MANIFEST" which should have been included
+ in the PodParser distribution.
 
 
  REQUIREMENTS
  ============
- * Perl version 5.002 or later
+ * Perl version 5.003 or later
 
  * Getopt::Long version 2.13 or later (podselect.PL and pod2usage.PL only)
 
@@ -142,24 +165,34 @@
  BUGS
  ====
  Please send all bug reports to Brad Appleton
- <Brad_Appleton-GBDA001@email.mot.com>.
+ <bradapp@enteract.com>.
 
 
  TO DO
  =====
+
+ SHORT TERM
+ ----------
+ * Create a Pod/InputObjects.pm and move the details of input streams
+   and interior sequences into appropriately named objects defined
+   in this file. THIS MEANS THE INTERFACE TO THESE THINGS WILL CHANGE
+   IN THE FUTURE. This shouldnt be too terrible because most people
+   don't need to use them.
+
+ * Add the ability to use callbacks _instead_ _of_ inheritance if so
+   desired (or mix+match 'em as you wish). This means that there should
+   be a way to use callbacks instead of inheritance for the equivalent
+   of each of the abstract base class methods that do text processing
+   (like preprocess_xxxxx and {begin,end}_xxxx and others). This will go
+   into a module named Pod::Callbacks.
+
+ * Do the Makefile.PL right using xsubpp!
+
+ LONG TERM
+ ---------
  * Try and get pod2html and pod2man and the other pod2xxx translators to
    use Pod::Parser (so they will all use the same uniform and consistent
-   pod parsing engine).
-
- * Document "=pod" pragmas in the perlpod manpage and implement them for
-   Pod::Text, Pod::HTML, etc. ... (or maybe the order of those two should
-   be reversed).
-
- * When and if pod syntax provides some type of file inclusion mechanism
-   (like '=include' perhaps) then Pod::Parser will need to perform it,
-   and will also need instance data to provide a stack of the current
-   filehandles, filenames, line numbers, and paragraph numbers of all
-   files that are in the middle of being processed.
+   POD parsing engine).
 
  * Make changes necessary to accomodate Kenneth Albanowski's Pod::Simplify
    module so that it may be a subclass of Pod::Parser.
@@ -179,9 +212,118 @@
 
  HISTORY
  =======
- 19-Aug-1996           Brad Appleton     <Brad_Appleton-GDBA001@email.mot.com>
+ 24-Sep-1997           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
- Released version 1.00 (first "official" release):
+ Version 1.03 (major revision)
+ - SIGNIFICANT CHANGES
+   * If a POD directive begins with '==' instead of '=', then that line
+     is considered a paragraph by itself (you dont need a blank line
+     before you begin the next paragraph). NOTE that this only works
+     for the *beginning* of a paragraph!! If the '==' begins a line
+     in the *middle* of a paragraph, then it receives no special treatment
+     and is not considered to be the beginning of a new POD directive).
+     If this added convenience seems confusing at first, just remember the
+     following phrases:
+        "LESS IS MORE" -- LESS equals signs need MORE newlines!
+        "MORE IS LESS" -- MORE equals signs need LESS newlines!
+     As long as you dont forget that the '=' on a POD directive always
+     comes *before* the newline that ends the paragraph (so the '=' is
+     associated with the first word of each phrase) you should be fine.
+
+   * The '=pod' command *IS* *NOW* *PASSED* TO Pod::Parser::command()!
+
+   * ALL INSTANCE DATA FIELDS HAVE BEEN RENAMED! Rather than using the new
+     field names, you should use the newly provided field access methods to
+     get/set private instance data. These are as follows:
+
+         Accessor Method           Old Field Name
+       -------------------      -------------------
+         cutting()                   CUTTING
+         output_file()               OUTFILE
+         output_handle()             OUTPUT
+         input_file()                INFILE
+         input_handle()              INPUT
+         total_lines()               LINE
+         total_paragraphs()          PARAGRAPH
+         input_streams()             INPUT_STACK
+         top_stream()                INPUT_TOP
+         sequence_commands()         SEQUENCES
+
+   * The last parameter passed to the command() and interior_sequence()
+     methods has changed. Please see the documentation!
+
+   * The stack of interior sequences being processed is NO LONGER an
+     array of text-strings. It is now an array of hash-refs!
+
+   * Renamed my version of Pod::Text to Pod::PlainText to avoid some nasty
+     problems it caused for CPAN.
+
+   * The method Pod::Parser::interpolate() NO LONGER MODIFIES its first
+     argument (which means the argument doesnt have to be an l-value)!
+     This method is now a wrapper which invokes the new method named
+     _interpolate_bottom_up(). This new method *is* recursive and *does*
+     modify its first argument.
+
+   * _interpolate_bottom_up() contains a small but ugly *hack* to allow
+     '->' and '=>' to remain untouched inside of C<...> without having
+     to use the E<gt> escape sequence PROVIDED THAT there is something
+     to the left of it OTHER THAN another '-' or '='.
+
+   * The 'select()' and 'want_section()' methods have moved from Pod::Parser
+     into Pod::Select.
+
+   * All callback and callback-related methods have moved into the new
+     module Pod:::Callbacks (which is NOT YET FINISHED for this release).
+
+ 22-May-1997           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.02
+ - Added the ability to register callbacks for =xxxx paragraphs and other
+   paragraphs. This means that one could (for example) register a temporary
+   callback after =item is seen to handle the very next paragraph and then
+   unregister itself. The methods added were add_callbacks and rm_callbacks.
+   Also, a private method invoke_callbacks was added to go about the business
+   of invoking callbacks. The callback mechanism Ive implemented is extremely
+   flexible and also way more complex than Id like (and hence requires lots
+   more documentation than I would like). Also, the interfaces to add_callbacks
+   and rm_callbacks tries to be very flexible in the number and type of
+   arguments you can give it. This is probably too flexible to the point
+   of being too difficult to figure out how to use. My callback mechanism
+   is very powerful but I think the interface to it is lousy and far too
+   complex. I am desperately in search of a way to make it smaller and
+   simpler without removing too much functionality. If you have any ideas
+   about how to do this PLEASE SHARE THEM WITH ME!
+
+ - Got rid of =pod pragmas. P5P has decided to use =for, and =begin/=end
+   instead and Ill just handle those like regular commands. NOTE THAT THIS
+   MEANS THE command() METHOD SHOULD NOW EXPECT TO BE PASSED =pod COMMANDS.
+
+ - Expanded the documentation for Pod::Usage to be (hopefully) a little less
+   confusing regarding the various different invocation styles. Many thanks
+   to Steven McDougall <swmcd@world.std.com> for spending many hours of
+   assistance toward this goal.
+
+ - Fixed Pod::Text to use the proper indentation for nested '=item' lists
+   and to handle consecutive =item paragraphs. (Thank you to Diab Jerious
+   <djerius@cfa.harvard.edu> for helping me with this one.)
+
+ - Fixed a bug in Pod::Parser that was causing the argument to =over to be
+   a newline instead of the empty string when no "over count" was given.
+
+ 05-Sep-1996           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.01
+ - Commented out "use diagnostics" in all modules
+ - Made use of "use vars"
+ - Added the instance variables $self->{INPUT_STACK} and $self->{INPUT_TOP}
+   to Pod::Parser and made it possible to use the parse_from_file() and
+   parse_from_filehandle methods() to process "included" files (in addition
+   to normal pods that dont "include" other files).
+ - Added MSG option/key to pod2usage().
+
+ 19-Aug-1996           Brad Appleton                   <bradapp@enteract.com>
+ -----------------------------------------------------------------------------
+ Version 1.00 (first "official" release):
   - Renamed Pod::Filter to Pod::Parser at Kenneth Albanowski's recommendation.
   - Moved podselect() into its own separate module Pod::Select to avoid
     unnecessary namespace pollution in Pod::Parser.
@@ -196,7 +338,7 @@
   - Removed pod2text.PL and added pod2usage.PL
 
 
- 07-Aug-1996           Brad Appleton     <Brad_Appleton-GDBA001@email.mot.com>
+ 07-Aug-1996           Brad Appleton                   <bradapp@enteract.com>
  -----------------------------------------------------------------------------
  Initial release of version 0.01 to garner some feedback. This release was
  actually three separate "initial" releases of Pod::Parser, Pod::Text, and

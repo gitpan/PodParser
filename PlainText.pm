@@ -1,7 +1,7 @@
 #############################################################################
-# Text.pm -- convert POD data to formatted ASCII text
+# Pod/PlainText.pm -- convert POD data to formatted ASCII text
 #
-# Derived from Tom Christiansen's Pod::Text module
+# Derived from Tom Christiansen's Pod::PlainText module
 # (with extensive modifications).
 #
 # Copyright (C) 1994-1996 Tom Christiansen. All rights reserved.
@@ -10,27 +10,27 @@
 # as Perl itself.
 #############################################################################
 
-package Pod::Text;
+package Pod::PlainText;
 
-$VERSION = 2.00;   ## Current version of this package
-require  5.002;    ## requires Perl version 5.002 or later
+$VERSION = 1.03;   ## Current version of this package
+require  5.003;    ## requires Perl version 5.002 or later
 
 =head1 NAME
 
-pod2text - function to convert POD data to formatted ASCII text
+pod2plaintext - function to convert POD data to formatted ASCII text
 
-Pod::Text - a class for converting POD data to formatted ASCII text
+Pod::PlainText - a class for converting POD data to formatted ASCII text
 
 =head1 SYNOPSIS
 
-    use Pod::Text;
-    pod2text("perlfunc.pod");
+    use Pod::PlainText;
+    pod2plaintext("perlfunc.pod");
 
 or
 
-    use Pod::Text;
+    use Pod::PlainText;
     package MyParser;
-    @ISA = qw(Pod::Text);
+    @ISA = qw(Pod::PlainText);
 
     sub new {
        ## constructor code ...
@@ -47,17 +47,17 @@ or
 
 =head1 DESCRIPTION
 
-Pod::Text is a module that can convert documentation in the POD
+Pod::PlainText is a module that can convert documentation in the POD
 format (such as can be found throughout the Perl distribution) into
 formatted ASCII.  Termcap is optionally supported for
-boldface/underline, and can be enabled via C<$Pod::Text::termcap=1>.
+boldface/underline, and can be enabled via C<$Pod::PlainText::termcap=1>.
 If termcap has not been enabled, then backspaces will be used to
 simulate bold and underlined text.
 
-A separate F<pod2text> program is included that is primarily a wrapper for
-C<Pod::Text::pod2text()>.
+A separate F<pod2plaintext> program is included that is primarily a wrapper for
+C<Pod::PlainText::pod2plaintext()>.
 
-The single function C<pod2text()> can take one or two arguments. The first
+The single function C<pod2plaintext()> can take one or two arguments. The first
 should be the name of a file to read the pod from, or "<&STDIN" to read from
 STDIN. A second argument, if provided, should be a filehandle glob where
 output should be sent.
@@ -71,17 +71,21 @@ L<Pod::Parser>.
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
 
 Modified to derive from B<Pod::Parser> by
-Brad Appleton E<lt>Brad_Appleton-GBDA001@email.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
 
 =cut
 
 #############################################################################
 
-use Exporter ();
-use Term::Cap;
+use vars qw(@ISA @EXPORT $VERSION %HTML_Escapes);
+use strict;
+#use diagnostics;
+use Carp;
+use Exporter;
 use Pod::Parser;
+use Term::Cap;
 @ISA = qw(Exporter Pod::Parser);
-@EXPORT = qw(&pod2text);
+@EXPORT = qw(&pod2plaintext);
 
 %HTML_Escapes = (
     'amp'       =>        '&',        #   ampersand
@@ -156,23 +160,18 @@ use Pod::Parser;
     "rchevron"  =>        "\xBB",     #   right chevron (double greater than)
 );
 
-use strict;
-use diagnostics;
-use Carp;
-
 ##---------------------------------
 ## Function definitions begin here
 ##---------------------------------
 
 sub version {
-    no strict;
     return  $VERSION;
 }
 
-sub pod2text {
+sub pod2plaintext {
     my ($infile, $outfile) = @_;
     local $_;
-    my $text_parser = new Pod::Text;
+    my $text_parser = new Pod::PlainText;
     $text_parser->parse_from_file($infile, $outfile);
 }
 
@@ -198,7 +197,7 @@ sub initialize {
 
 sub makespace {
     my $self = shift;
-    my $out_fh = $self->{OUTPUT};
+    my $out_fh = $self->output_handle();
     if ($self->{NEEDSPACE}) {
         print $out_fh "\n";
         $self->{NEEDSPACE} = 0;
@@ -269,29 +268,43 @@ sub fill {
     return $par;
 }
 
-## Handle a pending "item" paragraph.  The lone argument (if given) is the
+## Handle a pending "item" paragraph.  The paragraph (if given) is the
 ## corresponding item text.  (the item tag should be in $self->{ITEM}).
 sub item {
-    my $self  = shift;
-    local($_) = @_;
+    my $self = shift;
+    my $cmd  = shift;
+    local $_ = shift;
+    my $attrs  = shift;
+    $cmd  = ''  unless (defined $cmd);
+    $_    = ''  unless (defined $_);
+    my $out_fh  = $self->output_handle();
     return  unless (defined  $self->{ITEM});
-    my $out_fh  = $self->{OUTPUT};
     my $paratag = $self->{ITEM};
-    my $prev_indent = $self->{INDENTS}->[$#{$self->{INDEX}} - 1]
+    my $prev_indent = $self->{INDENTS}->[$#{$self->{INDENTS}}]
                       || $self->{DEF_INDENT};
+    ## reset state
     undef $self->{ITEM};
-    if ((defined $_) && ($_ ne '')
-                     && (length($paratag) + 3) < $self->{INDENT}) {
-        if (/^=/) {  # tricked!
-           $self->output($paratag, INDENT => $prev_indent);
+    #$self->rm_callbacks('*');
+
+    my $over = $self->{INDENT};
+    $over   -= $prev_indent  if ($prev_indent < $over);
+    if ($cmd ne '') {  # tricked - this is another command
+        $self->output($paratag, INDENT => $prev_indent);
+        $self->command($cmd, $_, $attrs);
+    }
+    elsif (/^\s+/o) {  # verbatim
+        $self->output($paratag, INDENT => $prev_indent);
+        $self->verbatim($_);
+    }
+    else {  # plain textblock
+        $_ = $self->interpolate($_);
+        if (($_ ne '') && (length($paratag) <= $over)) {
+            $self->IP_output($paratag, $_);
         }
         else {
-           $self->IP_output($paratag, $_);
+            $self->output($paratag, INDENT => $prev_indent);
+            $self->output($_, REFORMAT => 1);
         }
-    }
-    else {
-        $self->output($paratag, INDENT => $prev_indent);
-        $self->output($_, REFORMAT => 1);
     }
 }
 
@@ -313,8 +326,8 @@ sub IP_output {
     my $self  = shift;
     my $tag   = shift;
     local($_) = @_;
-    my $out_fh  = $self->{OUTPUT};
-    my $tag_indent  = $self->{INDENTS}->[$#{$self->{INDEX}} - 1]
+    my $out_fh  = $self->output_handle();
+    my $tag_indent  = $self->{INDENTS}->[$#{$self->{INDENTS}}]
                       || $self->{DEF_INDENT};
     my $tag_cols = $self->{SCREEN} - $tag_indent;
     my $cols = $self->{SCREEN} - $self->{INDENT};
@@ -346,7 +359,9 @@ sub IP_output {
 sub output {
     my $self = shift;
     local $_ = shift;
-    my $out_fh = $self->{OUTPUT};
+    $_    = ''  unless (defined $_);
+    return  if ($_ eq '');
+    my $out_fh = $self->output_handle();
     my %options;
     if (@_ > 1) {
         ## usage was $self->output($text, NAME=>VALUE, ...);
@@ -408,24 +423,8 @@ sub internal_lrefs {
    return $retstr;
 }
 
-sub begin_input {
+sub begin_pod {
     my $self = shift;
-
-    #----------------------------------------------------
-    # This class may wish to make use of some of the
-    # commented-out code below for initializing pragmas
-    #----------------------------------------------------
-    # $self->{PRAGMAS} = {
-    #     FILL     => 'on',
-    #     STYLE    => 'plain',
-    #     INDENT   => 0,
-    # };
-    # ## Initialize all PREVIOUS_XXX pragma values
-    # my ($name, $value);
-    # for (($name, $value) = each %{$self->{PRAGMAS}}) {
-    #     $self->{PRAGMAS}->{"PREVIOUS_${name}"} = $value;
-    # }
-    #----------------------------------------------------
 
     $self->{TERMCAP} = 0;
     #$self->{USE_FORMAT} = 1;
@@ -455,78 +454,12 @@ sub begin_input {
     $self->{DEF_INDENT} = 4;
     $self->{INDENTS}    = [];
     $self->{INDENT}     = $self->{DEF_INDENT};
-    $self->{INDEX}      = [];
     $self->{NEEDSPACE}  = 0;
 }
 
-sub end_input {
+sub end_pod {
     my $self = shift;
-    $self->item()  if (defined $self->{ITEM});
-}
-
-sub pragma {
-    my $self  = shift;
-    ## convert remaining args to lowercase
-    my $name  = lc shift;
-    my $value = lc shift;
-    my $rc = 1;
-    local($_);
-    #----------------------------------------------------
-    # This class may wish to make use of some of the
-    # commented-out code below for processing pragmas
-    #----------------------------------------------------
-    # my ($abbrev, %abbrev_table);
-    # if ($name eq 'fill') {
-    #     %abbrev_table = ('on' => 'on',
-    #                      'of' => 'off',
-    #                      'p'  => 'previous');
-    #     $value = 'on' unless ((defined $value) && ($value ne ''));
-    #     return  $rc  unless ($value =~ /^(on|of|p)/io);
-    #     $abbrev = $1;
-    #     $value = $abbrev_table{$abbrev};
-    #     if ($value eq 'previous') {
-    #         $self->{PRAGMAS}->{FILL} = $self->{PRAGMAS}->{PREVIOUS_FILL};
-    #     }
-    #     else {
-    #         $self->{PRAGMAS}->{PREVIOUS_FILL} = $self->{PRAGMAS}->{FILL};
-    #         $self->{PRAGMAS}->{FILL} = $value;
-    #     }
-    # }
-    # elsif ($name eq 'style') {
-    #     %abbrev_table = ('b'  => 'bold',
-    #                      'i'  => 'italic',
-    #                      'c'  => 'code',
-    #                      'pl' => 'plain',
-    #                      'pr' => 'previous');
-    #     $value = 'plain' unless ((defined $value) && ($value ne ''));
-    #     return  $rc  unless ($value =~ /^(b|i|c|pl|pr)/io);
-    #     $abbrev = $1;
-    #     $value = $abbrev_table{$abbrev};
-    #     if ($value eq 'previous') {
-    #         $self->{PRAGMAS}->{STYLE} = $self->{PRAGMAS}->{PREVIOUS_STYLE};
-    #     }
-    #     else {
-    #         $self->{PRAGMAS}->{PREVIOUS_STYLE} = $self->{PRAGMAS}->{STYLE};
-    #         $self->{PRAGMAS}->{STYLE} = $value;
-    #     }
-    # }
-    # elsif ($name eq 'indent') {
-    #     return $rc unless ((defined $value) && ($value =~ /^([-+]?)(\d*)$/o));
-    #     my ($sign, $number) = ($1, $2);
-    #     $value .= 3  unless ((defined $number) && ($number ne ''));
-    #     $self->{PRAGMAS}->{PREVIOUS_INDENT} = $self->{PRAGMAS}->{INDENT};
-    #     if ($sign) {
-    #         $self->{PRAGMAS}->{INDENT} += $value;
-    #     }
-    #     else {
-    #         $self->{PRAGMAS}->{INDENT} = $value;
-    #     } 
-    # }
-    # else {
-    #     $rc = 0;
-    # }
-    #----------------------------------------------------
-    return $rc;
+    $self->item('', '', '')  if (defined $self->{ITEM});
 }
 
 sub command {
@@ -535,12 +468,13 @@ sub command {
     local $_ = shift;
     $cmd  = ''  unless (defined $cmd);
     $_    = ''  unless (defined $_);
-    my $out_fh  = $self->{OUTPUT};
+    my $out_fh  = $self->output_handle();
 
+    return  $self->item($cmd, $_)  if (defined $self->{ITEM});
     $_ = $self->interpolate($_);
     s/\s*$/\n/;
-    $self->item()  if (defined $self->{ITEM});
 
+    return  if ($cmd eq 'pod');
     if ($cmd eq 'head1') {
         $self->makespace();
         print $out_fh $_;
@@ -571,6 +505,7 @@ sub command {
         # s/\A(\s*)\*/$1\xb7/ if $self->{FANCY};
         # s/^(\s*\*\s+)/$1 /;
         $self->{ITEM} = $_;
+        #$self->add_callbacks('*', SUB => \&item);
     }
     else {
         carp "Unrecognized directive: $cmd\n";
@@ -580,7 +515,7 @@ sub command {
 sub verbatim {
     my $self = shift;
     local $_ = shift;
-    $self->item()  if (defined $self->{ITEM});
+    return  $self->item('', $_)  if (defined $self->{ITEM});
     $self->{NEEDSPACE} = 1;
     $self->output($_);
 }
@@ -588,15 +523,11 @@ sub verbatim {
 sub textblock {
     my $self  = shift;
     my $text  = shift;
+    return  $self->item('', $text)  if (defined $self->{ITEM});
     local($_) = $self->interpolate($text);
-    if (defined $self->{ITEM}) {
-        $self->item($_);
-    }
-    else {
-        s/\s*$/\n/;
-        $self->makespace();
-        $self->output($_, REFORMAT => 1);
-    }
+    s/\s*$/\n/;
+    $self->makespace();
+    $self->output($_, REFORMAT => 1);
 }
 
 sub interior_sequence {
@@ -605,14 +536,12 @@ sub interior_sequence {
     my $arg  = shift;
     local($_) = $arg;
     if ($cmd eq 'C') {
-        no strict;  ## dont complain about $HTML_Escapes without package prefix
         my ($pre, $post) = ("`", "'");
         ($pre, $post) = ($HTML_Escapes{"lchevron"}, $HTML_Escapes{"rchevron"})
                 if ((defined $self->{FANCY}) && $self->{FANCY});
         $_ = $pre . $_ . $post;
     }
     elsif ($cmd eq 'E') {
-        no strict;  ## dont complain about $HTML_Escapes without package prefix
         if (defined $HTML_Escapes{$_}) {
             $_ = $HTML_Escapes{$_};
         }

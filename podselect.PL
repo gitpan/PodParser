@@ -15,7 +15,7 @@ use File::Basename qw(&basename &dirname);
 chdir(dirname($0));
 ($file = basename($0)) =~ s/\.PL$//;
 $file =~ s/\.pl$//
-	if ($^O eq 'VMS' or $^O eq 'os2');  # "case-forgiving"
+        if ($^O eq 'VMS' or $^O eq 'os2');  # "case-forgiving"
 
 open OUT,">$file" or die "Can't create $file: $!";
 
@@ -27,7 +27,7 @@ print "Extracting $file (with variable substitutions)\n";
 print OUT <<"!GROK!THIS!";
 $Config{'startperl'}
     eval 'exec perl -S \$0 "\$@"'
-	if 0;
+        if 0;
 !GROK!THIS!
 
 # In the following, perl variables are not expanded during extraction.
@@ -55,7 +55,7 @@ podselect - print selected sections of pod documentation on standard output
 
 =head1 SYNOPSIS
 
-B<podselect> [B<-help>] [B<-man>] [B<-select>S< >I<section-spec>]
+B<podselect> [B<-help>] [B<-man>] [B<-section>S< >I<section-spec>]
 [I<file>S< >...]
 
 =head1 OPTIONS AND ARGUMENTS
@@ -70,7 +70,7 @@ Print a brief help message and exit.
 
 Print the manual page and exit.
 
-=item B<-select>S< >I<section-spec>
+=item B<-section>S< >I<section-spec>
 
 Specify a section to include in the output.
 See L<Pod::Parser/"SECTION SPECIFICATIONS">
@@ -91,8 +91,8 @@ documentation and will print out (in raw pod format) all sections that
 match one ore more of the given section specifications. If no section
 specifications are given than all pod sections encountered are output.
 
-B<podselect> invokes the B<podselect()> function in the B<Pod::Select>
-module. Please see L<Pod::Select/podselect()>.
+B<podselect> invokes the B<podselect()> function exported by B<Pod::Select>
+Please see L<Pod::Select/podselect()> for more details.
 
 =head1 SEE ALSO
 
@@ -100,7 +100,7 @@ L<Pod::Parser> and L<Pod::Select>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>Brad_Appleton-GBDA001@email.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
 
 Based on code for B<Pod::Text::pod2text(1)> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
@@ -108,27 +108,28 @@ Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
 =cut
 
 use Pod::Select;
-use Pod::Usage;
+#use Pod::Usage;
+sub pod2usage { exit(2); }
 use Getopt::Long;
 
 ## Define options
 my %options = (
-        "help"   => 0,
-        "man"    => 0,
-        "select" => [],
+        "help"     => 0,
+        "man"      => 0,
+        "sections" => [],
 );
 
 ## Parse options
-GetOptions(\%options, "help", "man", "select=s@")  ||  pod2usage(2);
+GetOptions(\%options, "help", "man", "sections|select=s@")  ||  pod2usage(2);
 pod2usage(1)  if ($options{help});
-pod2usage(VERBOSE => 2)  if ($options{man});
+pod2usage(-verbose => 2)  if ($options{man});
 
 ## Dont default to STDIN if connected to a terminal
 pod2usage(2) if ((@ARGV == 0) && (-t STDIN));
 
 ## Invoke podselect().
-if (@{$options{"select"}} > 0) {
-    podselect({SELECT => $options{"select"}}, @ARGV);
+if (@{ $options{"sections"} } > 0) {
+    podselect({ -sections => $options{"sections"} }, @ARGV);
 }
 else {
     podselect(@ARGV);

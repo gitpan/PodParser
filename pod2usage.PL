@@ -15,7 +15,7 @@ use File::Basename qw(&basename &dirname);
 chdir(dirname($0));
 ($file = basename($0)) =~ s/\.PL$//;
 $file =~ s/\.pl$//
-	if ($^O eq 'VMS' or $^O eq 'os2');  # "case-forgiving"
+        if ($^O eq 'VMS' or $^O eq 'os2');  # "case-forgiving"
 
 open OUT,">$file" or die "Can't create $file: $!";
 
@@ -27,7 +27,7 @@ print "Extracting $file (with variable substitutions)\n";
 print OUT <<"!GROK!THIS!";
 $Config{'startperl'}
     eval 'exec perl -S \$0 "\$@"'
-	if 0;
+        if 0;
 !GROK!THIS!
 
 # In the following, perl variables are not expanded during extraction.
@@ -120,7 +120,7 @@ L<Pod::Usage>, L<pod2text(1)>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>Brad_Appleton-GBDA001@email.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
 
 Based on code for B<pod2text(1)> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>

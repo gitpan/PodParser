@@ -1,5 +1,5 @@
 #############################################################################
-# Select.pm -- function to select portions of pod docs
+# Pod/Select.pm -- function to select portions of POD docs
 #
 # Based on Tom Christiansen's pod2text() function
 # (with extensive modifications).
@@ -12,54 +12,401 @@
 
 package Pod::Select;
 
-$VERSION = 1.00;   ## Current version of this package
-require  5.002;    ## requires Perl version 5.002 or later
+require  5.003;    ## requires Perl version 5.002 or later
+$VERSION = 1.03;   ## Current version of this package
+
+#############################################################################
 
 =head1 NAME
 
-podselect - function to extract selected sections of pod documentation
+Pod::Select, podselect() - extract selected sections of POD from input
 
 =head1 SYNOPSIS
 
     use Pod::Select;
-    podselect (@filelist);
-    podselect ({OUTPUT => "tmp.out"}, @filelist):
-    podselect ({SELECT => ["NAME|SYNOPSIS", "OPTIONS"]}, @filelist):
-    podselect ({OUTPUT => ">&STDERR", SELECT => ["DESCRIPTION"]}, "-");
+
+    ## Select all the POD sections for each file in @filelist
+    ## and print the result on standard output.
+    podselect(@filelist);
+
+    ## Same as above, but write to tmp.out
+    podselect({-output => "tmp.out"}, @filelist):
+
+    ## Select from the given filelist, only those POD sections that are
+    ## within a 1st level section named any of: NAME, SYNOPSIS, OPTIONS.
+    podselect({-sections => ["NAME|SYNOPSIS", "OPTIONS"]}, @filelist):
+
+    ## Select the "DESCRIPTION" section of the PODs from STDIN and write
+    ## the result to STDERR.
+    podselect({-output => ">&STDERR", -sections => ["DESCRIPTION"]}, \*STDIN);
+
+or
+
+    use Pod::Select;
+
+    ## Create a parser object for selecting POD sections from the input
+    $parser = new Pod::Select();
+
+    ## Select all the POD sections for each file in @filelist
+    ## and print the result to tmp.out.
+    $parser->parse_from_file("<&STDIN", "tmp.out");
+
+    ## Select from the given filelist, only those POD sections that are
+    ## within a 1st level section named any of: NAME, SYNOPSIS, OPTIONS.
+    $parser->select("NAME|SYNOPSIS", "OPTIONS");
+    for (@filelist) { $parser->parse_from_file($_); }
+
+    ## Select the "DESCRIPTION" and "SEE ALSO" sections of the PODs from
+    ## STDIN and write the result to STDERR.
+    $parser->select("DESCRIPTION");
+    $parser->add_selection("SEE ALSO");
+    $parser->parse_from_filehandle(\*STDIN, \*STDERR);
+
+=head1 REQUIRES
+
+perl5.003, Pod::Parser, Exporter, FileHandle, Carp
+
+=head1 EXPORTS
+
+podselect()
 
 =head1 DESCRIPTION
 
 B<podselect()> is a function which will extract specified sections of
-pod documentation from an input stream. This ability is already provided
-in the B<Pod::Parser> module. Subclasses of B<Pod::Parser> that wish to
-take advantage of this feature do I<not> need to derive from
-B<Pod::Select>. B<Pod::Select> merely provides a single function named
-B<podselect()> which provides this capability in function form (as
-opposed to object form) for extracting the raw pod docs.
+pod documentation from an input stream. This ability is provided by the
+B<Pod::Select> module which is a subclass of B<Pod::Parser>.
+B<Pod::Select> provides a method named B<select()> to specify the set of
+POD sections to select for processing/printing. B<podselect()> merely
+creates a B<Pod::Select> object and then invokes the B<podselect()>
+followed by B<parse_from_file()>.
+
+=head1 SECTION SPECIFICATIONS
+
+B<podselect()> and B<Pod::Select::select()> may be given one or more
+"section specifications" to restrict the text processed to only the
+desired set of sections and their corresponding subsections.  A section
+specification is a string containing one or more Perl-style regular
+expressions separated by forward slashes ("/").  If you need to use a
+forward slash literally within a section title you can escape it with a
+backslash ("\/").
+
+The formal syntax of a section specification is:
+
+=over 4
+
+=item
+
+I<head1-title-regex>/I<head2-title-regex>/...
+
+=back
+
+Any omitted or empty regular expressions will default to ".*".
+Please note that each regular expression given is implicitly
+anchored by adding "^" and "$" to the beginning and end.  Also, if a
+given regular expression starts with a "!" character, then the
+expression is I<negated> (so C<!foo> would match anything I<except>
+C<foo>).
+
+Some example section specifications follow.
+
+=over 4
+
+=item
+Match the C<NAME> and C<SYNOPSIS> sections and all of their subsections:
+
+C<NAME|SYNOPSIS>
+
+=item
+Match only the C<Question> and C<Answer> subsections of the C<DESCRIPTION>
+section:
+
+C<DESCRIPTION/Question|Answer>
+
+=item
+Match the C<Comments> subsection of I<all> sections:
+
+C</Comments>
+
+=item
+Match all subsections of C<DESCRIPTION> I<except> for C<Comments>:
+
+C<DESCRIPTION/!Comments>
+
+=item
+Match the C<DESCRIPTION> section but do I<not> match any of its subsections:
+
+C<DESCRIPTION/!.+>
+
+=item
+Match all top level sections but none of their subsections:
+
+C</!.+>
+
+=back 
 
 =cut
 
 #############################################################################
 
-use Exporter ();
-use Pod::Parser;
-@ISA = qw(Exporter);
+use vars qw(@ISA @EXPORT $VERSION);
+use strict;
+#use diagnostics;
+use Carp;
+use Pod::Parser 1.10;
+
+@ISA = qw(Pod::Parser);
 @EXPORT = qw(&podselect);
 
+use vars qw($VERSION $MAX_HEADING_LEVEL);
 use strict;
-use diagnostics;
+#use diagnostics;
 use Carp;
 
-sub version {
-    no strict;
-    return  $VERSION;
+## Maximum number of heading levels supported for '=headN' directives
+*MAX_HEADING_LEVEL = \3;
+
+#############################################################################
+
+=head1 OBJECT METHODS
+
+The following methods are provided in this module. Each one takes a
+reference to the object itself as an implicit first parameter.
+
+=cut
+
+##---------------------------------------------------------------------------
+
+=head1 B<select()>
+
+            $parser->select($section_spec1,$section_spec2,...);
+
+
+This method is used to select the particular sections and subsections of
+POD documentation that are to be printed and/or processed. The existing
+set of selected sections is I<replaced> with the given set of sections.
+See B<add_selection()> for adding to the current set of selected
+sections.
+
+Each of the C<$section_spec> arguments should be a section specification
+as described in L<"SECTION SPECIFICATIONS">.  The section specifications
+are parsed by this method and the resulting regular expressions are
+stored in the invoking object.
+
+If no C<$section_spec> arguments are given, then the existing set of
+selected sections is cleared out (which means C<all> sections will be
+processed).
+
+This method should I<not> normally be overridden by subclasses.
+
+=cut
+
+sub select {
+    my $self = shift;
+    my @sections = @_;
+    local $_;
+
+    ##---------------------------------------------------------------------
+    ## The following is a blatant hack for backward compatibility, and for
+    ## implementing add_selection(). If the *first* *argument* is the
+    ## string "+", then the remaining section specifications are *added*
+    ## to the current set of selections; otherwise the given section
+    ## specifications will *replace* the current set of selections.
+    ##
+    ## This should probably be fixed someday, but for the present time,
+    ## it seems incredibly unlikely that "+" would ever correspond to
+    ## a legitimate section heading
+    ##---------------------------------------------------------------------
+    my $add = ($sections[0] eq "+") ? shift(@sections) : "";
+
+    ## Reset the set of sections to use
+    unless (@sections > 0) {
+        delete $self->{_SELECTED_SECTIONS}  unless ($add);
+        return;
+    }
+    $self->{_SELECTED_SECTIONS} = []
+        unless ($add  &&  exists $self->{_SELECTED_SECTIONS});
+
+    ## Compile each spec
+    my $spec;
+    for $spec (@sections) {
+        if ( defined($_ = &_compile_section_spec($spec)) ) {
+            ## Store them in our sections array
+            push(@{$self->{_SELECTED_SECTIONS}}, $_);
+        }
+        else {
+            carp "Ignoring section spec \"$spec\"!\n";
+        }
+    }
 }
 
+##---------------------------------------------------------------------------
 
-=head2 podselect(\%options, @filelist)
+=head1 B<add_selection()>
 
-B<podselect> will print the raw (untranslated) pod documentation of all
-pod sections in the given input files specified by C<@filelist>
+            $parser->add_selection($section_spec1,$section_spec2,...);
+
+
+This method is used to add to the currently selected sections and
+subsections of POD documentation that are to be printed and/or
+processed. See <select()> for replacing the currently selected sections.
+
+Each of the C<$section_spec> arguments should be a section specification
+as described in L<"SECTION SPECIFICATIONS">. The section specifications
+are parsed by this method and the resulting regular expressions are
+stored in the invoking object.
+
+This method should I<not> normally be overridden by subclasses.
+
+=cut
+
+sub add_selection {
+    my $self = shift;
+    $self->select("+", @_);
+}
+
+##---------------------------------------------------------------------------
+
+=head1 B<clear_selections()>
+
+            $parser->clear_selections();
+
+
+This method takes no arguments, it has the exact same effect as invoking
+<select()> with no arguments.
+
+=cut
+
+sub clear_selections {
+    my $self = shift;
+    $self->select();
+}
+
+##---------------------------------------------------------------------------
+
+=head1 B<match_section()>
+
+            $boolean = $parser->match_section($heading1,$heading2,...);
+
+
+Returns a value of true if the given section and subsection heading
+titles match any of the currently selected section specifications in
+effect from prior calls to B<select()> and B<add_selection()> (or if
+there are no explictly selected/deselected sections).
+
+The arguments C<$heading1>, C<$heading2>, etc. are the heading titles of
+the corresponding sections, subsections, etc. to try and match.  If
+C<$headingN> is ommitted then it defaults to the current corresponding
+section heading title in the input.
+
+This method should I<not> normally be overridden by subclasses.
+
+=cut
+
+sub match_section {
+    my $self = shift;
+    my (@headings) = @_;
+
+    ## Return true if no restrictions were explicitly specified
+    my $selections = (exists $self->{_SELECTED_SECTIONS})
+                       ?  $self->{_SELECTED_SECTIONS}  :  undef;
+    return  1  unless ((defined $selections) && (@{$selections} > 0));
+
+    ## Default any unspecified sections to the current one
+    my @current_headings = @{ $self->{_SECTION_HEADINGS} };
+    for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
+        (defined $headings[$i])  or  $headings[$i] = $current_headings[$i];
+    }
+
+    ## Look for a match against the specified section expressions
+    my ($section_spec, $regex, $negated, $match);
+    for $section_spec ( @{$selections} ) {
+        ##------------------------------------------------------
+        ## Each portion of this spec must match in order for
+        ## the spec to be matched. So we will start with a 
+        ## match-value of 'true' and logically 'and' it with
+        ## the results of matching a given element of the spec.
+        ##------------------------------------------------------
+        $match = 1;
+        for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
+            $regex   = $section_spec->[$i];
+            $negated = ($regex =~ s/^\!//);
+            $match  &= ($negated ? ($headings[$i] !~ /${regex}/)
+                                 : ($headings[$i] =~ /${regex}/));
+            last unless ($match);
+        }
+        return  1  if ($match);
+    }
+    return  0;  ## no match
+}
+
+##---------------------------------------------------------------------------
+
+=head1 B<is_selected()>
+
+            $boolean = $parser->is_selected($paragraph);
+
+
+This method is used to determine if the block of text given in
+C<$paragraph> falls within the currently selected set of POD sections
+and subsections to be printed or processed. This method is also
+responsible for keeping track of the current input section and
+subsections. It is assumed that C<$paragraph> is the most recently read
+(but not yet processed) input paragraph.
+
+The value returned will be true if the C<$paragraph> and the rest of the
+text in the same section as C<$paragraph> should be selected (included)
+for processing; otherwise a false value is returned.
+
+=cut
+
+sub is_selected {
+    my ($self, $paragraph) = @_;
+    local $_;
+
+    ## Initialize current section heading titles if necessary
+    unless (defined $self->{_SECTION_HEADINGS}) {
+        $self->{_SECTION_HEADINGS} = [];
+        for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
+            $self->{_SECTION_HEADINGS}->[$i] = '';
+        }
+    }
+
+    ## Keep track of current sections levels and headings
+    $_ = $paragraph;
+    if (/^=((?:sub)*)(?:head(?:ing)?|sec(?:tion)?)(\d*)\s+(.*)\s*$/) {
+        ## This is a section heading command
+        my ($level, $heading) = ($2, $3);
+        $level = 1 + (length($1) / 3)  if (($level eq '') || ($1 ne ''));
+        ## Reset the current section heading at this level
+        $self->{_SECTION_HEADINGS}->[$level - 1] = $heading;
+        ## Reset subsection headings of this one to empty
+        for (my $i = $level; $i < $MAX_HEADING_LEVEL; ++$i) {
+            $self->{_SECTION_HEADINGS}->[$i] = '';
+        }
+    }
+
+    return  $self->match_section();
+}
+
+#############################################################################
+
+=head1 EXPORTED FUNCTIONS
+
+The following functions are exported by this module. Please note that
+these are functions (not methods) and therefore C<do not> take an
+implicit first argument.
+
+=cut
+
+##---------------------------------------------------------------------------
+
+=head1 B<podselect()>
+
+            podselect(\%options,@filelist);
+
+
+B<podselect> will print the raw (untranslated) POD paragraphs of all
+POD sections in the given input files specified by C<@filelist>
 according to the given options.
 
 If any argument to B<podselect> is a reference to a hash
@@ -68,23 +415,22 @@ processed as follows:
 
 =over 4
 
-=item C<OUTPUT>
+=item C<-output>
 
 A string corresponding to the desired output file (or ">&STDOUT"
 or ">&STDERR"). The default is to use standard output.
 
-=item C<SELECT>
+=item C<-sections>
 
 A reference to an array of sections specifications (as described in
-L<Pod::Parser/"SECTION SPECIFICATIONS">) which indicate the desired set of pod
+L<"SECTION SPECIFICATIONS">) which indicate the desired set of POD
 sections and subsections to be selected from input. If no section
-specifications are given, then all sections of pod documentation are
-used.
+specifications are given, then all sections of the PODs are used.
 
 =back
 
 All other arguments should correspond to the names of input files
-containing pod documentation. A file name of "-" or "<&STDIN" will
+containing POD sections. A file name of "-" or "<&STDIN" will
 be interpeted to mean standard input (which is the default if no
 filenames are given).
 
@@ -92,17 +438,34 @@ filenames are given).
 
 sub podselect {
     my(@argv) = @_;
-    my (@sections, $output);
-    my $pod_parser = new Pod::Parser;
+    my $pod_parser = new Pod::Select;
     my $num_inputs = 0;
-    local($_);
+    my $output = ">&STDOUT";
+    my %opts = ();
+    local $_;
     for (@argv) {
         if (ref($_)) {
             next unless (ref($_) eq 'HASH');
-            $output = $_->{OUTPUT}  if (defined $_->{OUTPUT});
-            if ((defined $_->{SELECT}) && (ref($_->{SELECT}) eq 'ARRAY')) {
-                $pod_parser->select(@{$_->{SELECT}});
-            }
+            %opts = %{$_};
+
+            ##-------------------------------------------------------------
+            ## Need this for backward compatibility since we formerly used
+            ## options that were all uppercase words rather than ones that
+            ## looked like Unix command-line options.
+            ## to be uppercase keywords)
+            ##-------------------------------------------------------------
+            %opts = map {
+                my $val = $opts{$_};
+                s/^\w/-$&/;
+                /^-se[cl]/i  and  $_ = '-sections';
+                lc($_) => $val;    
+            } (keys %opts);
+
+            ## Process the options
+            (exists $opts{-output})  and  $output = $opts{-output};
+            $pod_parser->select(@{ $opts{-sections} })
+                if ( (defined $opts{-sections})
+                     && ((ref $opts{-sections}) eq 'ARRAY') );
         }
         else {
             $pod_parser->parse_from_file($_, $output);
@@ -112,13 +475,120 @@ sub podselect {
     $pod_parser->parse_from_file("-")  unless ($num_inputs > 0);
 }
 
+#############################################################################
+
+=head1 PRIVATE METHODS AND DATA
+
+B<Pod::Select> makes uses a number of internal methods and data fields
+which clients should not need to see or use. For the sake of avoiding
+name collisions with client data and methods, these methods and fields
+are briefly discussed here. Determined hackers may obtain further
+information about them by reading the B<Pod::Select> source code.
+
+Private data fields are stored in the hash-object whose reference is
+returned by the B<new()> constructor for this class. The names of all
+private methods and data-fields used by B<Pod::Select> begin with a
+prefix of "_" and match the regular expression C</^_\w+$/>.
+
+=cut
+
+##---------------------------------------------------------------------------
+
+=begin _PRIVATE_
+
+=head1 B<_compile_section_spec()>
+
+            $listref = $parser->_compile_section_spec($section_spec);
+
+
+This function (note it is a function and I<not> a method) takes a
+section specification (as described in L<"SECTION SPECIFICATIONS">)
+given in C<$section_sepc>, and compiles it into a list of regular
+expressions. If C<$section_spec> has no syntax errors, then a reference
+to the list (array) of corresponding regular expressions is returned;
+otherwise C<undef> is returned and an error message is printed (using
+B<carp>) for each invalid regex.
+
+=end _PRIVATE_
+
+=cut
+
+sub _compile_section_spec {
+    my ($section_spec) = @_;
+    my (@regexs, $negated);
+
+    ## Compile the spec into a list of regexs
+    local $_ = $section_spec;
+    s|\\\\|\001|g;  ## handle escaped backward slashes
+    s|\\/|\002|g;   ## handle escaped forward slashes
+
+    ## Parse the regexs for the heading titles
+    @regexs = split('/', $_, $MAX_HEADING_LEVEL);
+
+    ## Set default regex for ommitted levels
+    for (my $i = 0; $i < $MAX_HEADING_LEVEL; ++$i) {
+        $regexs[$i]  = '.*'  if ((! defined $regexs[$i]) || $regexs[$i] eq "");
+    }
+    ## Modify the regexs as needed and validate their syntax
+    my $bad_regexs = 0;
+    for (@regexs) {
+        $_ .= '.+'  if ($_ eq '!');
+        s|\001|\\\\|g;       ## restore escaped backward slashes
+        s|\002|\\/|g;        ## restore escaped forward slashes
+        $negated = s/^\!//;  ## check for negation
+        eval "/$_/";         ## check regex syntax
+        if ($@) {
+            ++$bad_regexs;
+            carp "Bad regular expression /$_/ in \"$section_spec\": $@\n";
+        }
+        else {
+            ## Add the forward and rear anchors (and put the negator back)
+            $_ = '^' . $_  unless (/^\^/);
+            $_ = $_ . '$'  unless (/\$$/);
+            $_ = '!' . $_  if ($negated);
+        }
+    }
+    return  (! $bad_regexs) ? [ @regexs ] : undef;
+}
+
+##---------------------------------------------------------------------------
+
+=begin _PRIVATE_
+
+=head2 $self->{_SECTION_HEADINGS}
+
+A reference to an array of the current section heading titles for each
+heading level (note that the first heading level title is at index 0).
+
+=end _PRIVATE_
+
+=cut
+
+##---------------------------------------------------------------------------
+
+=begin _PRIVATE_
+
+=head2 $self->{_SELECTED_SECTIONS}
+
+A reference to an array of references to arrays. Each subarray is a list
+of anchored regular expressions (preceded by a "!" if the expression is to
+be negated). The index of the expression in the subarray should correspond
+to the index of the heading title in C<$self-E<gt>{_SECTION_HEADINGS}>
+that it is to be matched against.
+
+=end _PRIVATE_
+
+=cut
+
+#############################################################################
+
 =head1 SEE ALSO
 
 L<Pod::Parser>
 
 =head1 AUTHOR
 
-Brad Appleton E<lt>Brad_Appleton-GBDA001@email.mot.comE<gt>
+Brad Appleton E<lt>bradapp@enteract.mot.conE<gt>
 
 Based on code for B<pod2text> written by
 Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
@@ -126,3 +596,4 @@ Tom Christiansen E<lt>tchrist@mox.perl.comE<gt>
 =cut
 
 1;
+
