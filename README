@@ -69,9 +69,9 @@
 
  AUTHORS/CONTRIBUTORS
  ====================
+ Marek Rouchal  <marekr@cpan.org>
  Brad Appleton  <bradapp@enteract.com>  http://www.enteract.com/~bradapp/
  Russ Allbery   <rra@standford.edu>
- Marek Rouchal  <marek@saftsack.fs.uni-bayreuth.de>
 
 
  ACKNOWLEDGEMENTS
@@ -169,8 +169,8 @@
 
  BUGS
  ====
- Please send all bug reports to Brad Appleton <bradapp@enteract.com>.
-
+ Please use the CPAN bug tracking to report bugs:
+ http://rt.cpan.org/NoAuth/Bugs.html?Dist=PodParser
 
  TO DO
  =====

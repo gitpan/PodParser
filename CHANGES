@@ -1,3 +1,22 @@
+ 24-Nov-2003           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.26
+ + bumped version of Pod::Parser on request by Jarkko Hietaniemi
+ + included a patch by Peter Prymmer PPrymmerATfactset.com to fix
+   the expansion of the scripts on VMS
+ + included fix to support PodParser as core module from 5.6.0 on
+   (Autrijus Tang autrijusATautrijus.org)
+ + updated README and other files to reflect change in maintenance,
+   in consequence updated Pod::PlainText and some t/...xr
+
+
+ 27-Aug-2003           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.25 - not released
+ + Merged bleadperl-5.8.1 into this distribution. Added a couple of
+   if($ENV{PERL_CORE}) statements to ease the maintenance of core/module.
+
+
  26-Aug-2003           Marek Rouchal                        <marekr@cpan.org>
  -----------------------------------------------------------------------------
  Version 1.24

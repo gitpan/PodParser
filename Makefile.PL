@@ -32,8 +32,13 @@ $DISTMOD   = 'Pod::Parser';  ## The "title" module of this distribution
                  pod2usage
                );
 sub script($) { File::Spec->catfile ('scripts', @_) }
-my @EXE_FILES = map { script $_ } @SCRIPTS;
-
+my @EXE_FILES = ();
+if ( $^O eq 'VMS' ) {
+  @EXE_FILES = map { script "$_.com" } @SCRIPTS;
+}
+else {
+  @EXE_FILES = map { script $_ } @SCRIPTS;
+}
 
 ## The test-script to execute regression tests (note that the
 ## 'xtra' directory might not exist for some installations)
@@ -51,8 +56,8 @@ push @testdirs, $test2dir if (-d $test2dir);
 WriteMakefile(
     NAME         => $DISTMOD,
     DISTNAME     => $DISTNAME,
-    VERSION      => '1.24',
-    INSTALLDIRS  => ($] >= 5.008 ? 'perl' : 'site'),
+    VERSION      => '1.26',
+    INSTALLDIRS  => ($] >= 5.006 ? 'perl' : 'site'),
     PL_FILES     => { map { (script("$_.PL") => script($_)) } @SCRIPTS },
     EXE_FILES    => [ @EXE_FILES ],
     dist         => { COMPRESS => 'gzip', SUFFIX => 'gz' },
