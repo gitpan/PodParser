@@ -1,3 +1,11 @@
+ 12-Jun-2003           Marek Rouchal                        <marekr@cpan.org>
+ -----------------------------------------------------------------------------
+ Version 1.23
+ + fixed a bug in Usage.pm, spotted by Kees Cook keesATosdl.org:
+   the special value 'NOEXIT' has not been treated appropriately
+ + added INSTALLDIRS=perl as suggested by M. Schwern
+
+
  23-Apr-2003           Marek Rouchal                        <marekr@cpan.org>
  -----------------------------------------------------------------------------
  Version 1.22

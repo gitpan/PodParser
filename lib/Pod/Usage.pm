@@ -10,7 +10,7 @@
 package Pod::Usage;
 
 use vars qw($VERSION);
-$VERSION = 1.15;  ## Current version of this package
+$VERSION = 1.16;  ## Current version of this package
 require  5.005;    ## requires this Perl version or later
 
 =head1 NAME
@@ -469,7 +469,8 @@ sub pod2usage {
     }
 
     ## Default the output file
-    $opts{"-output"} = ($opts{"-exitval"} < 2) ? \*STDOUT : \*STDERR
+    $opts{"-output"} = (lc($opts{"-exitval"}) eq "noexit" ||
+                        $opts{"-exitval"} < 2) ? \*STDOUT : \*STDERR
             unless (defined $opts{"-output"});
     ## Default the input file
     $opts{"-input"} = $0  unless (defined $opts{"-input"});
